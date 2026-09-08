@@ -72,7 +72,7 @@ public class BiddingConcurrencyTest {
         // Crear y guardar categoría obligatoria
         Categories category = new Categories();
         category.setName("Electrónica"); // o el nombre del campo en tu modelo (ej. setNombre)
-        category.setSlug("electronica");
+        //category.setSlug("electronica");
         category = categoriesRepository.save(category);
 
         // Crear subasta asignando la categoría y el usuario

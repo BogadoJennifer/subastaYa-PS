@@ -1,4 +1,4 @@
-package unaj.subastayaps.model;
+package unaj.subastaya.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

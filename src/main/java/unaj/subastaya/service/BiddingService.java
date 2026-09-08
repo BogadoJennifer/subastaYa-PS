@@ -1,8 +1,8 @@
-package unaj.subastayaps.service;
-import unaj.subastayaps.model.Auction;
-import unaj.subastayaps.model.Wallet;
-import unaj.subastayaps.repository.AuctionRepository;
-import unaj.subastayaps.repository.WalletRepository;
+package unaj.subastaya.service;
+import unaj.subastaya.model.Auction;
+import unaj.subastaya.model.Wallet;
+import unaj.subastaya.repository.AuctionRepository;
+import unaj.subastaya.repository.WalletRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -23,8 +23,10 @@ public class BiddingService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subasta no encontrada"));
 
-        Wallet walletBuyer = walletRepository.findByUserId(buyerId)
-                .orElseThrow(() -> new IllegalArgumentException("Billetera no encontrada"));
+        Wallet walletBuyer = walletRepository.findByUserId(buyerId);
+        if (walletBuyer == null) {
+            throw new IllegalArgumentException("Billetera no encontrada");
+        }
 
         // Validar saldo disponible
         if (walletBuyer.getAvailableBalance().compareTo(bidAmount) < 0) {
@@ -32,10 +34,10 @@ public class BiddingService {
         }
 
         // Actualizar saldos de la billetera
-        walletBuyer.setRetainedBalance(walletBuyer.getRetainedBalance().add(bidAmount));
-        walletBuyer.setAvailableBalance(walletBuyer.getTotalBalance().subtract(walletBuyer.getRetainedBalance()));
+        BigDecimal newRetainedBalance = walletBuyer.getRetainedBalance().add(bidAmount);
+        walletBuyer.setRetainedBalance(newRetainedBalance);
+        walletBuyer.setAvailableBalance(walletBuyer.getTotalBalance().subtract(newRetainedBalance));
 
-        // Al guardar, Hibernate compara: UPDATE billeteras SET ... WHERE id = ? AND version = ?
         walletRepository.save(walletBuyer);
         auctionRepository.save(auction);
     }

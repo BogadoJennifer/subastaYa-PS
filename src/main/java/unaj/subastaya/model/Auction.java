@@ -12,8 +12,8 @@ public class Auction {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "seller_id", nullable = false)
-    private User seller;
+    @JoinColumn(name = "buyer_id", nullable = false)
+    private User buyer;
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
@@ -50,8 +50,8 @@ public class Auction {
     // Getters y Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public User getSeller() { return seller; }
-    public void setSeller(User seller) { this.seller = seller; }
+    public User getBuyer() { return buyer; }
+    public void setBuyer(User buyer) { this.buyer = buyer; }
     public Categories getCategories() { return category; }
     public void setCategories(Categories category) { this.category = category; }
     public String getTitle() { return title; }

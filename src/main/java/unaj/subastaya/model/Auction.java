@@ -1,4 +1,4 @@
-package unaj.subastayaps.model;
+package unaj.subastaya.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -72,4 +72,8 @@ public class Auction {
     public void setState(String state) { this.state = state; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
+
+    public void setStatuS(String status) {
+
+    }
 }

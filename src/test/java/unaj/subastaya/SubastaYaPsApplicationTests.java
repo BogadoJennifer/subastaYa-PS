@@ -1,4 +1,4 @@
-package unaj.subastayaps;
+package unaj.subastaya;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

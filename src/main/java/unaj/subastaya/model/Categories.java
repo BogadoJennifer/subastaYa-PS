@@ -1,4 +1,4 @@
-package unaj.subastayaps.model;
+package unaj.subastaya.model;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,8 +12,9 @@ public class Categories {
     @Column(nullable = false, unique = true)
     private String name;
 
+
     @Column(nullable = false)
-    private String slug;
+    private String description;
 
     public Categories() {}
 
@@ -22,6 +23,6 @@ public class Categories {
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public String getSlug() { return slug; }
-    public void setSlug(String slug) { this.slug = slug; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 }

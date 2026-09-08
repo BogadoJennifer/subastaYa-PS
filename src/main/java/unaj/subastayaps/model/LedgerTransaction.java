@@ -16,7 +16,7 @@ public class LedgerTransaction {
     private Wallet wallet;
 
     @Column(nullable = false)
-    private String type; // DEPOSITO, RETENCION, LIBERACION, PAGO, COBRO
+    private String type;
 
     @Column(nullable = false)
     private BigDecimal amount;
@@ -24,7 +24,7 @@ public class LedgerTransaction {
     @Column(nullable = false)
     private LocalDateTime date;
 
-    private Long auctionId; // Opcional para trazabilidad
+    private Long auctionId;
 
     public LedgerTransaction() {}
 

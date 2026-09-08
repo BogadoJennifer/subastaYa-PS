@@ -107,9 +107,9 @@ public class DataSeeder {
     private void createAuction(AuctionRepository auctionRepository, User vendor, Categories category,
                                String title, String description, BigDecimal basePrice,
                                BigDecimal minimumIncrement, LocalDateTime startDate,
-                               LocalDateTime endDate, String status) {
+                               LocalDateTime endDate, String state) {
         Auction auction = new Auction();
-        auction.setSeller(vendor);
+        auction.setBuyer(vendor);
         auction.setCategories(category);
         auction.setTitle(title);
         auction.setDescription(description);
@@ -117,7 +117,7 @@ public class DataSeeder {
         auction.setMinimumIncrement(minimumIncrement);
         auction.setStartDate(startDate);
         auction.setEndDate(endDate);
-        auction.setStatuS(status);
+        auction.setState(state);
         auctionRepository.save(auction);
     }
 }

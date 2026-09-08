@@ -1,4 +1,4 @@
-package unaj.subastayaps.exception;
+package unaj.subastaya.exception;
 
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;

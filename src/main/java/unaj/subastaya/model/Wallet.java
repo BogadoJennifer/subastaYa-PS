@@ -41,5 +41,5 @@ public class Wallet {
     public void setAvailableBalance(BigDecimal availableBalance) { this.availableBalance = availableBalance; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
-    public void setReservedBalance(BigDecimal zero) {}
+    public void setReservedBalance(BigDecimal reservedBalance) { this.availableBalance = this.totalBalance.subtract(reservedBalance); }
 }

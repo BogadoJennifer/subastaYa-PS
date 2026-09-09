@@ -73,7 +73,4 @@ public class Auction {
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
 
-    public void setStatuS(String status) {
-
-    }
 }

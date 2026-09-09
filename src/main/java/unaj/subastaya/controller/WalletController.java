@@ -94,4 +94,17 @@ public class WalletController {
         // 8. Devolver la wallet actualizada
         return ResponseEntity.ok(updatedWallet);
     }
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<?> getWalletTransactions(
+            @PathVariable Long id) {
+
+        // Verificar que la billetera exista
+        if (!walletRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(
+                ledgerTransactionRepository.findByWalletId(id)
+        );
+    }
 }

@@ -50,7 +50,7 @@ public class WalletController {
     }
 
     // Endpoint para realizar una carga de saldo simulada
-    @PostMapping("/{id}/deposit")
+    @PostMapping("/{id}/deposits")
     public ResponseEntity<Wallet> depositMoney(
             @PathVariable Long id,
             @RequestParam BigDecimal amount) {

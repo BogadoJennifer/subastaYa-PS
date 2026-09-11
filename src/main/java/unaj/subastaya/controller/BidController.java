@@ -19,8 +19,22 @@ public class BidController {
     }
 
     @PostMapping
-    public ResponseEntity<String> placeBid(@PathVariable Long auctionId, @RequestParam long bidId, @RequestParam BigDecimal amount) {
-        biddingService.registerBid(auctionId, bidId, amount);
-        return ResponseEntity.ok("Oferta resgistrada exitosamente");
+    public ResponseEntity<String> registerBid(
+            @PathVariable Long auctionId,
+            @RequestParam Long bidderId,
+            @RequestParam BigDecimal amount) {
+
+        try {
+            biddingService.registerBid(auctionId, bidderId, amount);
+
+            return ResponseEntity.status(201)
+                    .body("Oferta registrada correctamente");
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        }
     }
 }

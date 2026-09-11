@@ -32,8 +32,11 @@ public class WalletController {
             @PathVariable Long id) {
 
         Wallet wallet = walletRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Wallet not found with id: " + id));
+                .orElse(null);
+
+        if (wallet == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         // Saldo disponible = Saldo Total - Saldo Retenido
         BigDecimal availableBalance = wallet.getTotalBalance()
@@ -55,32 +58,28 @@ public class WalletController {
             @PathVariable Long id,
             @RequestParam BigDecimal amount) {
 
-        // 1. Buscar la billetera
         Wallet wallet = walletRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Wallet not found with id: " + id));
+                .orElse(null);
 
-        // 2. Validar que el monto sea mayor que cero
+        if (wallet == null) {
+            return ResponseEntity.notFound().build();
+        }
+
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             return ResponseEntity.badRequest().build();
         }
 
-        // 3. Aumentar el saldo total
         wallet.setTotalBalance(
                 wallet.getTotalBalance().add(amount)
         );
 
-        // 4. Recalcular el saldo disponible
-        // Disponible = Total - Retenido
         wallet.setAvailableBalance(
                 wallet.getTotalBalance()
                         .subtract(wallet.getRetainedBalance())
         );
 
-        // 5. Guardar la wallet actualizada
         Wallet updatedWallet = walletRepository.save(wallet);
 
-        // 6. Crear el registro de la operación en el Ledger
         LedgerTransaction transaction = new LedgerTransaction();
 
         transaction.setWallet(updatedWallet);
@@ -88,11 +87,9 @@ public class WalletController {
         transaction.setAmount(amount);
         transaction.setDate(LocalDateTime.now());
 
-        // 7. Guardar la transacción
         ledgerTransactionRepository.save(transaction);
 
-        // 8. Devolver la wallet actualizada
-        return ResponseEntity.ok(updatedWallet);
+        return ResponseEntity.status(201).body(updatedWallet);
     }
     @GetMapping("/{id}/transactions")
     public ResponseEntity<?> getWalletTransactions(

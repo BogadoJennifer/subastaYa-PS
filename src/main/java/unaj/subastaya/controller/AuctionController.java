@@ -30,7 +30,8 @@ public class AuctionController {
     }
 
     @PostMapping
-    public Auction createAuction(@RequestBody Auction auction) {
-        return auctionRepository.save(auction);
+    public ResponseEntity<Auction> createAuction(@RequestBody Auction auction) {
+        Auction savedAuction = auctionRepository.save(auction);
+        return ResponseEntity.status(201).body(savedAuction);
     }
 }

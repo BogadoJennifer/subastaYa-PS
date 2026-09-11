@@ -1,8 +1,11 @@
 package unaj.subastaya.service;
 import unaj.subastaya.model.Auction;
 import unaj.subastaya.model.Wallet;
+import unaj.subastaya.model.Bid;
 import unaj.subastaya.repository.AuctionRepository;
 import unaj.subastaya.repository.WalletRepository;
+import unaj.subastaya.repository.BidRepository;
+import unaj.subastaya.service.EscrowService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -14,10 +17,14 @@ public class BiddingService {
 
     private final AuctionRepository auctionRepository;
     private final WalletRepository walletRepository;
+    private final BidRepository bidRepository;
+    private final EscrowService escrowService;
 
-    public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository) {
+    public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository, BidRepository bidRepository, EscrowService escrowService) {
         this.auctionRepository = auctionRepository;
         this.walletRepository = walletRepository;
+        this.bidRepository = bidRepository;
+        this.escrowService = escrowService;
     }
 
     @Transactional
@@ -58,12 +65,16 @@ public class BiddingService {
             auction.setEndDate(auction.getEndDate().plusMinutes(2));
         }
 
-        // 6. Actualizar saldos contables de la billetera
-        BigDecimal newRetainedBalance = walletBuyer.getRetainedBalance().add(bidAmount);
-        walletBuyer.setRetainedBalance(newRetainedBalance);
-        walletBuyer.setAvailableBalance(walletBuyer.getTotalBalance().subtract(newRetainedBalance));
 
-        walletRepository.save(walletBuyer);
+        escrowService.processEscrow(auctionId, buyerId, bidAmount);
+        Bid bid = new Bid();
+        bid.setAuction(auction);
+        bid.setBidder(walletBuyer.getUser());
+        bid.setAmount(bidAmount);
+        bid.setBidDate(now);
+
+        bidRepository.save(bid);
         auctionRepository.save(auction);
+
     }
 }

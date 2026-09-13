@@ -99,7 +99,6 @@ public class WalletController {
         if (!walletRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-
         return ResponseEntity.ok(
                 ledgerTransactionRepository.findByWalletId(id)
         );

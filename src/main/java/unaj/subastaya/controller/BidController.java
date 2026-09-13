@@ -26,13 +26,10 @@ public class BidController {
 
         try {
             biddingService.registerBid(auctionId, bidderId, amount);
-
             return ResponseEntity.status(201)
                     .body("Oferta registrada correctamente");
-
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
-
         } catch (IllegalStateException e) {
             return ResponseEntity.status(409).body(e.getMessage());
         }

@@ -9,6 +9,7 @@ import unaj.subastaya.service.EscrowService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -39,7 +40,7 @@ public class BiddingService {
             throw new IllegalStateException("La subasta no está activa o ya ha finalizado");
         }
 
-        // 2. Validar que el comprador no sea el vendedor
+        // 2. Validar que el comprador no sea el vendedor *revisar*
         if (auction.getBuyer() != null && auction.getBuyer().getId().equals(buyerId)) {
             throw new IllegalArgumentException("El vendedor no puede ofertar en su propia subasta");
         }

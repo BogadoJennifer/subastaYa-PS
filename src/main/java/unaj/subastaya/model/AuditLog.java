@@ -11,7 +11,7 @@ public class AuditLog {
     private Long id;
 
     @Column(nullable = false)
-    private String entity; // EJ: SUBASTA, BILLETERA, SISTEMA
+    private String entity; // EJ: SUBASTA, BILLETERA
 
     @Column(nullable = false)
     private Long entityId; // ID del registro afectado

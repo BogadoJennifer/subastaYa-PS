@@ -16,7 +16,7 @@ public class LedgerTransaction {
     private Wallet wallet;
 
     @Column(nullable = false)
-    private String type;
+    private String type; //DEPOSIT, HOLD, RELEASE, PAYMENT, CHARGE
 
     @Column(nullable = false)
     private BigDecimal amount;

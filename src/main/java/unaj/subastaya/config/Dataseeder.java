@@ -18,6 +18,7 @@ class Dataseeder {
             WalletRepository walletRepository,
             CategoriesRepository categoriesRepository,
             AuctionRepository auctionRepository,
+            LedgerTransactionRepository ledgerTransactionRepository,
             BidRepository bidRepository) {
 
         return args -> {
@@ -137,7 +138,7 @@ class Dataseeder {
                     "ACTIVE"
             );
 
-            createBid(
+            Bid bidTwo = createBid(
                     bidRepository,
                     auctionOne,
                     buyer2,
@@ -145,13 +146,34 @@ class Dataseeder {
                     LocalDateTime.now()
             );
 
-            createBid(
+            Bid bidOne = createBid(
                     bidRepository,
                     auctionOne,
                     buyer1,
                     new BigDecimal("45000"),
                     LocalDateTime.now()
             ); // Leader
+
+            //bidding history
+            BigDecimal amountBidOne = bidTwo.getAmount();
+            BigDecimal amountBidTwo = bidOne.getAmount();
+
+            User nameBuyerTwo = bidOne.getBidder();
+            User nameBuyerOne = bidTwo.getBidder();
+
+            LocalDateTime dateBidOne = bidOne.getBidDate();
+            LocalDateTime dateBidTwo = bidTwo.getBidDate();
+
+            //ledger transactions
+            createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "DEPOSIT", BigDecimal.valueOf(150000), LocalDateTime.now());
+            createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "HOLD", BigDecimal.valueOf(45000), LocalDateTime.now());
+            createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "PAYMENT", BigDecimal.valueOf(45000), LocalDateTime.now());
+
+            createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "DEPOSIT", BigDecimal.valueOf(200000), LocalDateTime.now());
+            createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "HOLD", BigDecimal.valueOf(35000), LocalDateTime.now());
+            createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "RELEASE", BigDecimal.valueOf(35000), LocalDateTime.now());
+
+            createLedgerTransaction(ledgerTransactionRepository, walletVendor, "CHARGE", BigDecimal.valueOf(45000), LocalDateTime.now());
 
             // Active critical auction:
             // closes in two minutes to test visual alert and anti-sniping rule
@@ -184,8 +206,7 @@ class Dataseeder {
                     "SCHEDULED"
             );
 
-            if (auctionThree.getStartDate().isAfter(LocalDateTime.now())) {
-
+            if ( LocalDateTime.now().isBefore(auctionThree.getStartDate())){
                 if (auctionThree.getBuyer() != null) {
                     throw new IllegalStateException("Auction has not started");
                 }
@@ -233,6 +254,8 @@ class Dataseeder {
                 auctionFive.setState("UNSOLD");
                 auctionRepository.save(auctionFive);
             }
+
+
 
         };
     }
@@ -298,7 +321,7 @@ class Dataseeder {
         return walletRepository.save(wallet);
     }
 
-    private void createBid(
+    private Bid createBid(
             BidRepository bidRepository,
             Auction auction,
             User bidder,
@@ -313,6 +336,7 @@ class Dataseeder {
         bid.setBidDate(bidDate);
 
         bidRepository.save(bid);
+        return bid;
     }
 
     private void createLedgerTransaction(

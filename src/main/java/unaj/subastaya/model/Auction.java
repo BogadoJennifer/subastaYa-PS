@@ -12,12 +12,16 @@ public class Auction {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "buyer_id", nullable = false)
+    @JoinColumn(name = "buyer_id")
     private User buyer;
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
     private Categories category;
+
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private User vendor;
 
     @Column(nullable = false)
     private String title;
@@ -40,13 +44,13 @@ public class Auction {
     private LocalDateTime endDate;
 
     @Column(nullable = false)
-    private String state; // PROGRAMADA, ACTIVA, FINALIZADA, DESIERTA
+    private String state; // SCHEDULED, ACTIVE, FINISHED, UNSOLD
 
-    @Version // <-- CRUCIAL PARA CONTROLAR CONCURRENCIA EN PUJAS SIMULTÁNEAS
+    @Version
     private Integer version;
 
-    public Auction() {}
 
+    public Auction() {}
     // Getters y Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -72,5 +76,7 @@ public class Auction {
     public void setState(String state) { this.state = state; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
+    public User getVendor() {return vendor;}
+    public void setVendor(User vendor) {this.vendor = vendor;}
 
 }

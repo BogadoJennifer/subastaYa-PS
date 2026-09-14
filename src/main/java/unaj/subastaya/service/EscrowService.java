@@ -34,15 +34,15 @@ public class EscrowService {
             Long newBidderId,
             java.math.BigDecimal bidAmount) {
 
-        // Buscar la puja más alta actual de la subasta
-        Bid previousHighestBid = bidRepository
+        Bid highestBid;
+        highestBid = bidRepository
                 .findTopByAuctionIdOrderByAmountDesc(auctionId)
                 .orElse(null);
 
         // Buscar la billetera del líder anterior
-        if (previousHighestBid != null) {
+        if (highestBid != null) {
 
-            Long previousBidderId = previousHighestBid
+            Long previousBidderId = highestBid
                     .getBidder()
                     .getId();
 
@@ -55,7 +55,7 @@ public class EscrowService {
             }
 
             // Monto que tenía retenido por esta puja
-            BigDecimal previousAmount = previousHighestBid.getAmount();
+            BigDecimal previousAmount = highestBid.getAmount();
 
             // Liberar ese monto
             BigDecimal newRetainedBalance =

@@ -1,14 +1,12 @@
 package unaj.subastaya.service;
+import unaj.subastaya.dto.BidResultDto;
 import unaj.subastaya.model.*;
 import unaj.subastaya.repository.*;
-import unaj.subastaya.service.EscrowService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
-import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class BiddingService {
@@ -34,7 +32,7 @@ public class BiddingService {
     }
 
     @Transactional
-    public void registerBid(Long auctionId, Long buyerId, BigDecimal bidAmount) {
+    public BidResultDto registerBid(Long auctionId, Long buyerId, BigDecimal bidAmount) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subasta no encontrada"));
 
@@ -71,6 +69,7 @@ public class BiddingService {
             auction.setEndDate(auction.getEndDate().plusMinutes(2));
         }
 
+        return null;
     }
 
     // Methods to create entities

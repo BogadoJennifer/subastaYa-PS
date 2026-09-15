@@ -1,8 +1,10 @@
 package unaj.subastaya.controller;
 
 import org.springframework.web.bind.annotation.*;
+import unaj.subastaya.dto.BidResultDto;
+import unaj.subastaya.dto.BidRequestDto;
 import unaj.subastaya.service.BiddingService;
-import unaj.subastaya.service.EscrowService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
 
@@ -11,27 +13,17 @@ import java.math.BigDecimal;
 public class BidController {
 
     private final BiddingService biddingService;
-    private final EscrowService escrowService;
 
-    public BidController(BiddingService biddingService, EscrowService escrowService) {
+    public BidController(BiddingService biddingService) {
         this.biddingService = biddingService;
-        this.escrowService = escrowService;
     }
 
     @PostMapping
-    public ResponseEntity<String> registerBid(
+    public ResponseEntity<BidResultDto> registerBid(
             @PathVariable Long auctionId,
-            @RequestParam Long bidderId,
-            @RequestParam BigDecimal amount) {
+            @RequestBody BidRequestDto dto) {
 
-        try {
-            biddingService.registerBid(auctionId, bidderId, amount);
-            return ResponseEntity.status(201)
-                    .body("Oferta registrada correctamente");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(e.getMessage());
-        }
+        BidResultDto result = biddingService.registerBid(auctionId, dto.bidderId(), dto.amount());
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 }

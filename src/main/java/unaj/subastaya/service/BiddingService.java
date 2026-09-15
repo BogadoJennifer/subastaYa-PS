@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class BiddingService {
@@ -55,7 +56,7 @@ public class BiddingService {
         }
 
         // 4. Validar billetera y saldo
-        Wallet walletBuyer = walletRepository.findByUserId(buyerId);
+        Wallet walletBuyer = walletRepository.findByUser(auction.getBuyer());
         if (walletBuyer == null) {
             throw new IllegalArgumentException("Billetera no encontrada");
         }

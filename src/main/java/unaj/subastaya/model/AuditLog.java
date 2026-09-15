@@ -22,7 +22,7 @@ public class AuditLog {
     private Long userId; // Null si lo ejecutó el worker del sistema
 
     @Column(columnDefinition = "TEXT")
-    private String detalleJson; // Payload con los cambios
+    private String detailJson; // Payload con los cambios
 
     @Column(nullable = false)
     private LocalDateTime date;
@@ -40,8 +40,8 @@ public class AuditLog {
     public void setAction(String action) { this.action = action; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
-    public String getDetalleJson() { return detalleJson; }
-    public void setDetalleJson(String detalleJson) { this.detalleJson = detalleJson; }
+    public String getDetailJson() { return detailJson; }
+    public void setDetailJson(String detailJson) { this.detailJson = detailJson; }
     public LocalDateTime getDate() { return date; }
     public void setDate(LocalDateTime date) { this.date = date; }
 }

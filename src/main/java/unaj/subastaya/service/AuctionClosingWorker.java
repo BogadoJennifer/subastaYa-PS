@@ -58,10 +58,10 @@ public class AuctionClosingWorker {
 
     private void processAuctionClosing(Auction auction) {
         // Buscar la puja ganadora directamente desde la base de datos
-        Optional<Bid> winningBidOpt = bidRepository.findTopByAuctionIdOrderByAmountDesc(auction.getId());
+        Optional<Bid> winningBidOpt = bidRepository.findHighestBid(auction.getId());
 
         if (winningBidOpt.isEmpty()) {
-            auction.setState("DESIERTA");
+            auction.setState("UNSOULD");
             auctionRepository.save(auction);
             log.info("Auditoría: Subasta id={} marcada como DESIERTA (sin ofertas)", auction.getId());
             return;
@@ -73,7 +73,7 @@ public class AuctionClosingWorker {
         Long buyerId = auction.getBuyer().getId();
 
         // 1. Debitar al Comprador (ganador)
-        Wallet winnerWallet = walletRepository.findByUserId(winnerId);
+        Wallet winnerWallet = walletRepository.findByUser(winningBid.getBidder());
         if (winnerWallet == null) {
             throw new IllegalStateException("Billetera del comprador no encontrada id=" + winnerId);
         }
@@ -82,7 +82,7 @@ public class AuctionClosingWorker {
         walletRepository.save(winnerWallet);
 
         // 2. Acreditar al Vendedor
-        Wallet buyerWallet = walletRepository.findByUserId(buyerId);
+        Wallet buyerWallet = walletRepository.findByUser(auction.getBuyer());
         if (buyerWallet == null) {
             throw new IllegalStateException("Billetera del comprador no encontrada id=" + buyerId);
         }
@@ -110,7 +110,7 @@ public class AuctionClosingWorker {
         ledgerTransactionRepository.save(creditTx);
 
         // 4. Marcar como FINALIZADA
-        auction.setState("FINALIZADA");
+        auction.setState("FINISHED");
         auctionRepository.save(auction);
 
         log.info("Auditoría Venta: Subasta id={} FINALIZADA. Ganador id={}, Comprador id={}, Monto={}",

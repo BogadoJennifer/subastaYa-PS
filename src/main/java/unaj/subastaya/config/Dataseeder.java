@@ -1,10 +1,12 @@
-package unaj.subastaya.config;
+﻿package unaj.subastaya.config;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import unaj.subastaya.model.*;
 import unaj.subastaya.repository.*;
+import unaj.subastaya.service.BiddingService;
+import unaj.subastaya.service.EscrowService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,7 +21,8 @@ class Dataseeder {
             CategoriesRepository categoriesRepository,
             AuctionRepository auctionRepository,
             LedgerTransactionRepository ledgerTransactionRepository,
-            BidRepository bidRepository) {
+            EscrowService escrowService,
+            BidRepository bidRepository, BiddingService biddingService) {
 
         return args -> {
 
@@ -29,9 +32,12 @@ class Dataseeder {
 
             LocalDateTime registrationDate = LocalDateTime.now();
 
+            //BiddingService biddingService1 = new BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository,
+                    //BidRepository bidRepository, EscrowService escrowService,UserRepository userRepository,
+                   // CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository);
+
             // Vendor: creates auctions
-            User vendor = createUser(
-                    userRepository,
+            User vendor = biddingService.createUser(userRepository,
                     "vendor@test.com",
                     "vendorpassword",
                     registrationDate,
@@ -39,7 +45,7 @@ class Dataseeder {
             );
 
             // Buyer 1: leader bidder
-            User buyer1 = createUser(
+            User buyer1 = biddingService.createUser(
                     userRepository,
                     "buyer1@test.com",
                     "buyer1password",
@@ -48,7 +54,7 @@ class Dataseeder {
             );
 
             // Buyer 2: authorized bidder
-            User buyer2 = createUser(
+            User buyer2 = biddingService.createUser(
                     userRepository,
                     "buyer2@test.com",
                     "buyer2password",
@@ -57,7 +63,7 @@ class Dataseeder {
             );
 
             // No funds: user whose bid was rejected
-            User noFunds = createUser(
+            User noFunds = biddingService.createUser(
                     userRepository,
                     "noFunds@test.com",
                     "nofundspassword",
@@ -66,7 +72,7 @@ class Dataseeder {
             );
 
             // Assign a wallet to each created user
-            Wallet walletVendor = createWallet(
+            Wallet walletVendor = biddingService.createWallet(
                     walletRepository,
                     vendor,
                     BigDecimal.ZERO,
@@ -74,7 +80,7 @@ class Dataseeder {
                     BigDecimal.ZERO
             );
 
-            Wallet walletBuyer1 = createWallet(
+            Wallet walletBuyer1 = biddingService.createWallet(
                     walletRepository,
                     buyer1,
                     new BigDecimal("150000"),
@@ -82,7 +88,7 @@ class Dataseeder {
                     new BigDecimal("45000")
             );
 
-            Wallet walletBuyer2 = createWallet(
+            Wallet walletBuyer2 = biddingService.createWallet(
                     walletRepository,
                     buyer2,
                     new BigDecimal("200000"),
@@ -90,7 +96,7 @@ class Dataseeder {
                     BigDecimal.ZERO
             );
 
-            Wallet walletNoFunds = createWallet(
+            Wallet walletNoFunds = biddingService.createWallet(
                     walletRepository,
                     noFunds,
                     new BigDecimal("500"),
@@ -99,32 +105,32 @@ class Dataseeder {
             );
 
             // New categories
-            Categories tech = createCategories(
+            Categories tech = biddingService.createCategories(
                     categoriesRepository,
                     "tech",
                     "technology"
             );
 
-            Categories collections = createCategories(
+            Categories collections = biddingService.createCategories(
                     categoriesRepository,
                     "collections",
                     "toys"
             );
 
-            Categories clothing = createCategories(
+            Categories clothing = biddingService.createCategories(
                     categoriesRepository,
                     "clothes",
                     "variability"
             );
 
-            Categories vehicles = createCategories(
+            Categories vehicles = biddingService.createCategories(
                     categoriesRepository,
                     "cars",
                     "vehicles"
             );
 
             // Standard active auction
-            Auction auctionOne = createAuction(
+            Auction auctionOne = biddingService.createAuction(
                     auctionRepository,
                     vendor,
                     null,
@@ -138,7 +144,7 @@ class Dataseeder {
                     "ACTIVE"
             );
 
-            Bid bidTwo = createBid(
+            Bid bidTwo = biddingService.createBid(
                     bidRepository,
                     auctionOne,
                     buyer2,
@@ -146,7 +152,7 @@ class Dataseeder {
                     LocalDateTime.now()
             );
 
-            Bid bidOne = createBid(
+            Bid bidOne = biddingService.createBid(
                     bidRepository,
                     auctionOne,
                     buyer1,
@@ -165,19 +171,19 @@ class Dataseeder {
             LocalDateTime dateBidTwo = bidTwo.getBidDate();
 
             //ledger transactions
-            createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "DEPOSIT", BigDecimal.valueOf(150000), LocalDateTime.now());
-            createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "HOLD", BigDecimal.valueOf(45000), LocalDateTime.now());
-            createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "PAYMENT", BigDecimal.valueOf(45000), LocalDateTime.now());
+            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "DEPOSIT", BigDecimal.valueOf(150000), LocalDateTime.now());
+            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "HOLD", BigDecimal.valueOf(45000), LocalDateTime.now());
+            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "PAYMENT", BigDecimal.valueOf(45000), LocalDateTime.now());
 
-            createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "DEPOSIT", BigDecimal.valueOf(200000), LocalDateTime.now());
-            createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "HOLD", BigDecimal.valueOf(35000), LocalDateTime.now());
-            createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "RELEASE", BigDecimal.valueOf(35000), LocalDateTime.now());
+            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "DEPOSIT", BigDecimal.valueOf(200000), LocalDateTime.now());
+            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "HOLD", BigDecimal.valueOf(35000), LocalDateTime.now());
+            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "RELEASE", BigDecimal.valueOf(35000), LocalDateTime.now());
 
-            createLedgerTransaction(ledgerTransactionRepository, walletVendor, "CHARGE", BigDecimal.valueOf(45000), LocalDateTime.now());
+            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletVendor, "CHARGE", BigDecimal.valueOf(45000), LocalDateTime.now());
 
             // Active critical auction:
             // closes in two minutes to test visual alert and anti-sniping rule
-            Auction auctionTwo = createAuction(
+            Auction auctionTwo = biddingService.createAuction(
                     auctionRepository,
                     vendor,
                     null,
@@ -192,7 +198,7 @@ class Dataseeder {
             );
 
             // Scheduled auction: starts in 24 hours and has no bids
-            Auction auctionThree = createAuction(
+            Auction auctionThree = biddingService.createAuction(
                     auctionRepository,
                     vendor,
                     null,
@@ -213,7 +219,7 @@ class Dataseeder {
             }
 
             // Expired auction: used to test Worker
-            Auction auctionFour = createAuction(
+            Auction auctionFour = biddingService.createAuction(
                     auctionRepository,
                     vendor,
                     null,
@@ -227,7 +233,7 @@ class Dataseeder {
                     "FINISHED"
             );
 
-            createBid(
+            biddingService.createBid(
                     bidRepository,
                     auctionFour,
                     buyer1,
@@ -236,7 +242,7 @@ class Dataseeder {
             );
 
             // Finished auction with no bids
-            Auction auctionFive = createAuction(
+            Auction auctionFive = biddingService.createAuction(
                     auctionRepository,
                     vendor,
                     null,
@@ -258,118 +264,5 @@ class Dataseeder {
 
 
         };
-    }
-
-    // Methods to create entities
-
-    private Categories createCategories(
-            CategoriesRepository categoriesRepository,
-            String name,
-            String description) {
-
-        Categories category = new Categories();
-
-        category.setName(name);
-        category.setDescription(description);
-
-        return categoriesRepository.save(category);
-    }
-
-    private Auction createAuction(
-            AuctionRepository auctionRepository,
-            User vendor,
-            User buyer,
-            Categories category,
-            String title,
-            String description,
-            BigDecimal basePrice,
-            BigDecimal minimumIncrement,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            String state) {
-
-        Auction auction = new Auction();
-
-        auction.setVendor(vendor);
-        auction.setBuyer(buyer);
-        auction.setCategories(category);
-        auction.setStartDate(startDate);
-        auction.setEndDate(endDate);
-        auction.setState(state);
-        auction.setTitle(title);
-        auction.setDescription(description);
-        auction.setBasePrice(basePrice);
-        auction.setMinimumIncrement(minimumIncrement);
-
-        return auctionRepository.save(auction);
-    }
-
-    private Wallet createWallet(
-            WalletRepository walletRepository,
-            User user,
-            BigDecimal totalBalance,
-            BigDecimal availableBalance,
-            BigDecimal reservedBalance) {
-
-        Wallet wallet = new Wallet();
-
-        wallet.setUser(user);
-        wallet.setTotalBalance(totalBalance);
-        wallet.setAvailableBalance(availableBalance);
-        wallet.setReservedBalance(reservedBalance);
-
-        return walletRepository.save(wallet);
-    }
-
-    private Bid createBid(
-            BidRepository bidRepository,
-            Auction auction,
-            User bidder,
-            BigDecimal amount,
-            LocalDateTime bidDate) {
-
-        Bid bid = new Bid();
-
-        bid.setAuction(auction);
-        bid.setBidder(bidder);
-        bid.setAmount(amount);
-        bid.setBidDate(bidDate);
-
-        bidRepository.save(bid);
-        return bid;
-    }
-
-    private void createLedgerTransaction(
-            LedgerTransactionRepository ledgerTransactionRepository,
-            Wallet wallet,
-            String type,
-            BigDecimal amount,
-            LocalDateTime date) {
-
-        LedgerTransaction transaction = new LedgerTransaction();
-
-        transaction.setWallet(wallet);
-        transaction.setType(type);
-        transaction.setAmount(amount);
-        transaction.setDate(date);
-
-        ledgerTransactionRepository.save(transaction);
-    }
-
-    private User createUser(
-            UserRepository userRepository,
-            String email,
-            String passwordHash,
-            LocalDateTime registrationDate,
-            String name) {
-
-        User user = new User();
-
-        user.setEmail(email);
-        user.setPasswordHash(passwordHash);
-        user.setRegistrationDate(registrationDate);
-        user.setName(name);
-
-        return userRepository.save(user);
     }
 }

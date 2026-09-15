@@ -1,10 +1,6 @@
 package unaj.subastaya.service;
-import unaj.subastaya.model.Auction;
-import unaj.subastaya.model.Wallet;
-import unaj.subastaya.model.Bid;
-import unaj.subastaya.repository.AuctionRepository;
-import unaj.subastaya.repository.WalletRepository;
-import unaj.subastaya.repository.BidRepository;
+import unaj.subastaya.model.*;
+import unaj.subastaya.repository.*;
 import unaj.subastaya.service.EscrowService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,12 +16,20 @@ public class BiddingService {
     private final WalletRepository walletRepository;
     private final BidRepository bidRepository;
     private final EscrowService escrowService;
+    private final UserRepository userRepository;
+    private final CategoriesRepository categoriesRepository;
+    private final LedgerTransactionRepository ledgerTransactionRepository;
 
-    public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository, BidRepository bidRepository, EscrowService escrowService) {
+    public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository,
+                          BidRepository bidRepository, EscrowService escrowService,UserRepository userRepository,
+                          CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository) {
         this.auctionRepository = auctionRepository;
         this.walletRepository = walletRepository;
         this.bidRepository = bidRepository;
         this.escrowService = escrowService;
+        this.userRepository = userRepository;
+        this.categoriesRepository = categoriesRepository;
+        this.ledgerTransactionRepository = ledgerTransactionRepository;
     }
 
     @Transactional
@@ -66,16 +70,118 @@ public class BiddingService {
             auction.setEndDate(auction.getEndDate().plusMinutes(2));
         }
 
+    }
 
-        escrowService.processEscrow(auctionId, buyerId, bidAmount);
+    // Methods to create entities
+
+    public Categories createCategories(
+            CategoriesRepository categoriesRepository,
+            String name,
+            String description) {
+
+        Categories category = new Categories();
+
+        category.setName(name);
+        category.setDescription(description);
+
+        return categoriesRepository.save(category);
+    }
+
+    public Auction createAuction(
+            AuctionRepository auctionRepository,
+            User vendor,
+            User buyer,
+            Categories category,
+            String title,
+            String description,
+            BigDecimal basePrice,
+            BigDecimal minimumIncrement,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            String state) {
+
+        Auction auction = new Auction();
+
+        auction.setVendor(vendor);
+        auction.setBuyer(buyer);
+        auction.setCategories(category);
+        auction.setStartDate(startDate);
+        auction.setEndDate(endDate);
+        auction.setState(state);
+        auction.setTitle(title);
+        auction.setDescription(description);
+        auction.setBasePrice(basePrice);
+        auction.setMinimumIncrement(minimumIncrement);
+
+        return auctionRepository.save(auction);
+    }
+
+    public Wallet createWallet(
+            WalletRepository walletRepository,
+            User user,
+            BigDecimal totalBalance,
+            BigDecimal availableBalance,
+            BigDecimal reservedBalance) {
+
+        Wallet wallet = new Wallet();
+
+        wallet.setUser(user);
+        wallet.setTotalBalance(totalBalance);
+        wallet.setAvailableBalance(availableBalance);
+        wallet.setReservedBalance(reservedBalance);
+
+        return walletRepository.save(wallet);
+    }
+
+    public Bid createBid(
+            BidRepository bidRepository,
+            Auction auction,
+            User bidder,
+            BigDecimal amount,
+            LocalDateTime bidDate) {
+
         Bid bid = new Bid();
+
         bid.setAuction(auction);
-        bid.setBidder(walletBuyer.getUser());
-        bid.setAmount(bidAmount);
-        bid.setBidDate(now);
+        bid.setBidder(bidder);
+        bid.setAmount(amount);
+        bid.setBidDate(bidDate);
 
         bidRepository.save(bid);
-        auctionRepository.save(auction);
+        return bid;
+    }
 
+    public void createLedgerTransaction(
+            LedgerTransactionRepository ledgerTransactionRepository,
+            Wallet wallet,
+            String type,
+            BigDecimal amount,
+            LocalDateTime date) {
+
+        LedgerTransaction transaction = new LedgerTransaction();
+
+        transaction.setWallet(wallet);
+        transaction.setType(type);
+        transaction.setAmount(amount);
+        transaction.setDate(date);
+
+        ledgerTransactionRepository.save(transaction);
+    }
+
+    public User createUser(
+            UserRepository userRepository,
+            String email,
+            String passwordHash,
+            LocalDateTime registrationDate,
+            String name) {
+
+        User user = new User();
+
+        user.setEmail(email);
+        user.setPasswordHash(passwordHash);
+        user.setRegistrationDate(registrationDate);
+        user.setName(name);
+
+        return userRepository.save(user);
     }
 }

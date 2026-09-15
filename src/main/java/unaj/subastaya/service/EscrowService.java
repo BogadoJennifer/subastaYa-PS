@@ -2,136 +2,120 @@ package unaj.subastaya.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import unaj.subastaya.model.*;
 import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.repository.LedgerTransactionRepository;
 import unaj.subastaya.repository.WalletRepository;
-import unaj.subastaya.model.Bid;
-import unaj.subastaya.model.Wallet;
+
 import java.math.BigDecimal;
-import unaj.subastaya.model.LedgerTransaction;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 public class EscrowService {
 
-    private final WalletRepository walletRepository;
     private final BidRepository bidRepository;
+    private final WalletRepository walletRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
 
     public EscrowService(
-            WalletRepository walletRepository,
             BidRepository bidRepository,
+            WalletRepository walletRepository,
             LedgerTransactionRepository ledgerTransactionRepository) {
 
-        this.walletRepository = walletRepository;
         this.bidRepository = bidRepository;
+        this.walletRepository = walletRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
     }
 
     @Transactional
     public void processEscrow(
-            Long auctionId,
-            Long newBidderId,
-            java.math.BigDecimal bidAmount) {
+            Auction auction,
+            User newBidder,
+            BigDecimal amount) {
 
-        Bid highestBid;
-        highestBid = bidRepository
-                .findTopByAuctionIdOrderByAmountDesc(auctionId)
+        // Buscar la puja más alta ANTERIOR
+        Bid beforeHighestBid = bidRepository
+                .findHighestBid(auction.getId())
                 .orElse(null);
 
-        // Buscar la billetera del líder anterior
-        if (highestBid != null) {
+        if (beforeHighestBid != null) {
 
-            Long previousBidderId = highestBid
-                    .getBidder()
-                    .getId();
+            User oldBidder = beforeHighestBid.getBidder();
 
-            Wallet previousBidderWallet =
-                    walletRepository.findByUserId(previousBidderId);
+           //si hay una nueva puja
+            if (!Objects.equals(
+                    oldBidder.getId(),
+                    newBidder.getId())) {
 
-            if (previousBidderWallet == null) {
-                throw new IllegalArgumentException(
-                        "Billetera del líder anterior no encontrada");
+                Wallet previousWallet =
+                        walletRepository.findByUser(oldBidder);
+
+                BigDecimal previousAmount =
+                        beforeHighestBid.getAmount();
+
+                // retengo el monto de la puja
+                previousWallet.setRetainedBalance(
+                        previousWallet
+                                .getRetainedBalance()
+                                .subtract(previousAmount)
+                );
+
+                // liberamos el monto de la puja
+                previousWallet.setAvailableBalance(
+                        previousWallet
+                                .getAvailableBalance()
+                                .add(previousAmount)
+                );
+
+                walletRepository.save(previousWallet);
+
+                // Registrar la liberación en el Ledger
+                LedgerTransaction releaseTransaction =
+                        new LedgerTransaction();
+
+                releaseTransaction.setWallet(previousWallet);
+                releaseTransaction.setType("RELEASE");
+                releaseTransaction.setAmount(previousAmount);
+                releaseTransaction.setDate(LocalDateTime.now());
+                releaseTransaction.setAuctionId(auction.getId());
+
+                ledgerTransactionRepository.save(releaseTransaction);
             }
-
-            // Monto que tenía retenido por esta puja
-            BigDecimal previousAmount = highestBid.getAmount();
-
-            // Liberar ese monto
-            BigDecimal newRetainedBalance =
-                    previousBidderWallet.getRetainedBalance()
-                            .subtract(previousAmount);
-
-            // Verificar que el saldo retenido no quede negativo
-            if (newRetainedBalance.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalStateException(
-                        "El saldo retenido del líder anterior es inconsistente");
-            }
-
-            // Actualizar saldo retenido
-            previousBidderWallet.setRetainedBalance(
-                    newRetainedBalance
-            );
-
-            // Recalcular saldo disponible
-            previousBidderWallet.setAvailableBalance(
-                    previousBidderWallet.getTotalBalance()
-                            .subtract(newRetainedBalance)
-            );
-
-            // Guardar la billetera actualizada
-            walletRepository.save(previousBidderWallet);
-
-            // Registrar la liberación en el Ledger
-            LedgerTransaction releaseTransaction =
-                    new LedgerTransaction();
-
-            releaseTransaction.setWallet(previousBidderWallet);
-            releaseTransaction.setType("RELEASE");
-            releaseTransaction.setAmount(previousAmount);
-            releaseTransaction.setDate(LocalDateTime.now());
-            releaseTransaction.setAuctionId(auctionId);
-
-            ledgerTransactionRepository.save(releaseTransaction);
         }
-        // Buscar la billetera del nuevo líder
+
+
         Wallet newBidderWallet =
-                walletRepository.findByUserId(newBidderId);
+                walletRepository.findByUser(newBidder);
 
-        if (newBidderWallet == null) {
+
+        // Verificar que tenga saldo suficiente
+        if (newBidderWallet
+                .getAvailableBalance()
+                .compareTo(amount) < 0) {
+
             throw new IllegalArgumentException(
-                    "Billetera del nuevo líder no encontrada");
+                    "El usuario no tiene saldo disponible suficiente"
+            );
         }
 
 
-    // Verificar que el nuevo líder tenga saldo disponible suficiente
-        if (newBidderWallet.getAvailableBalance()
-                .compareTo(bidAmount) < 0) {
-
-            throw new IllegalStateException(
-                    "Saldo insuficiente para retener la oferta");
-        }
-
-
-        // Retener el monto de la nueva oferta
-        BigDecimal newRetainedBalance =
-                newBidderWallet.getRetainedBalance()
-                        .add(bidAmount);
-
-        // Actualizar saldo retenido
-        newBidderWallet.setRetainedBalance(
-                newRetainedBalance
-        );
-
-        // Recalcular saldo disponible
+        // Restar el monto del saldo disponible
         newBidderWallet.setAvailableBalance(
-                newBidderWallet.getTotalBalance()
-                        .subtract(newRetainedBalance)
+                newBidderWallet
+                        .getAvailableBalance()
+                        .subtract(amount)
         );
 
-        // Guardar la billetera actualizada
-        walletRepository.save(newBidderWallet);
+        // Agregar el monto al saldo retenido
+        newBidderWallet.setRetainedBalance(
+                newBidderWallet
+                        .getRetainedBalance()
+                        .add(amount)
+        );
 
+        walletRepository.save(newBidderWallet);
 
         // Registrar la retención en el Ledger
         LedgerTransaction holdTransaction =
@@ -139,13 +123,10 @@ public class EscrowService {
 
         holdTransaction.setWallet(newBidderWallet);
         holdTransaction.setType("HOLD");
-        holdTransaction.setAmount(bidAmount);
+        holdTransaction.setAmount(amount);
         holdTransaction.setDate(LocalDateTime.now());
-        holdTransaction.setAuctionId(auctionId);
+        holdTransaction.setAuctionId(auction.getId());
 
         ledgerTransactionRepository.save(holdTransaction);
-
     }
-    }
-
-
+}

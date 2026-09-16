@@ -23,16 +23,18 @@ function App() {
 
     useEffect(() => {
         const controller = new AbortController()
+        let timeoutId
 
         async function loadAuctions() {
             try {
                 const response = await fetch('/api/auctions/catalog', {
                     signal: controller.signal,
+                    cache: 'no-store',
                 })
 
                 if (!response.ok) {
                     throw new Error(
-                        `No se pudieron cargar las subastas (${response.status})`
+                        `No se pudieron actualizar las subastas (${response.status})`
                     )
                 }
 
@@ -44,6 +46,7 @@ function App() {
 
                 if (!controller.signal.aborted) {
                     setAuctions(data)
+                    setError('')
                 }
             } catch (error) {
                 if (!controller.signal.aborted) {
@@ -52,13 +55,17 @@ function App() {
             } finally {
                 if (!controller.signal.aborted) {
                     setIsLoading(false)
+                    timeoutId = setTimeout(loadAuctions, 5000)
                 }
             }
         }
 
         loadAuctions()
 
-        return () => controller.abort()
+        return () => {
+            controller.abort()
+            clearTimeout(timeoutId)
+        }
     }, [])
     const categories = Array.from(
         new Map(
@@ -318,7 +325,17 @@ function App() {
                     </div>
                 )}
 
-                {error && <Alert variant="danger">{error}</Alert>}
+                {error && (
+                    <Alert variant={auctions.length > 0 ? 'warning' : 'danger'}>
+                        <div>{error}</div>
+
+                        <div className="small mt-1">
+                            {auctions.length > 0
+                                ? 'Mostramos los últimos datos recibidos. Reintentaremos automáticamente.'
+                                : 'Reintentaremos automáticamente en unos segundos.'}
+                        </div>
+                    </Alert>
+                )}
 
                 {!isLoading && !error && auctions.length === 0 && (
                     <Alert variant="info">
@@ -336,7 +353,7 @@ function App() {
                         </Alert>
                     )}
 
-                {!isLoading && !error && (
+                {!isLoading && (
                     <Row xs={1} md={2} lg={3} className="g-4">
                         {sortedAuctions.map((auction) => (
                             <Col key={auction.id}>

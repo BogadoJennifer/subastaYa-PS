@@ -261,6 +261,20 @@ class Dataseeder {
                 auctionRepository.save(auctionFive);
             }
 
+            auctionOne.setImageUrl("/images/nintendo.jpg");
+            auctionTwo.setImageUrl("/images/sweater.png");
+            auctionThree.setImageUrl("/images/comic.jpg");
+            auctionFour.setImageUrl("/images/ford2006.png");
+            auctionFive.setImageUrl("/images/toy.jpg");
+
+            auctionRepository.saveAll(java.util.List.of(
+                    auctionOne,
+                    auctionTwo,
+                    auctionThree,
+                    auctionFour,
+                    auctionFive
+            ));
+
 
 
         };

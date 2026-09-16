@@ -41,7 +41,7 @@ function TarjetaSubasta({ subasta }) {
             <Card.Body>
                 <div className="d-flex justify-content-between gap-2 mb-3">
           <span className="text-secondary small">
-            {subasta.categories?.name ?? 'Sin categoría'}
+            {subasta.categoryName ?? 'Sin categoría'}
           </span>
 
                     <Badge bg={estado.color}>{estado.texto}</Badge>
@@ -56,10 +56,22 @@ function TarjetaSubasta({ subasta }) {
                 </Card.Text>
 
                 <div className="border-top pt-3">
-                    <div className="small text-secondary">Precio base</div>
+                    <div className="small text-secondary">
+                        {subasta.highestBid != null ? 'Oferta más alta' : 'Precio base'}
+                    </div>
 
                     <div className="fs-4 fw-bold">
-                        {formatoPrecio.format(subasta.basePrice)}
+                        {formatoPrecio.format(
+                            subasta.highestBid ?? subasta.basePrice
+                        )}
+                    </div>
+
+                    <div className="small text-secondary mt-2">
+                        {subasta.bidCount === 0
+                            ? 'Sin ofertas todavía'
+                            : `${subasta.bidCount} ${
+                                subasta.bidCount === 1 ? 'oferta realizada' : 'ofertas realizadas'
+                            }`}
                     </div>
                 </div>
             </Card.Body>

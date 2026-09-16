@@ -20,7 +20,7 @@ function App() {
 
         async function cargarSubastas() {
             try {
-                const respuesta = await fetch('/api/auctions', {
+                const respuesta = await fetch('/api/auctions/catalog', {
                     signal: controller.signal,
                 })
 

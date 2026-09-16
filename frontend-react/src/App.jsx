@@ -16,6 +16,10 @@ function App() {
     const [error, setError] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedState, setSelectedState] = useState('ALL')
+    const [selectedCategory, setSelectedCategory] = useState('ALL')
+    const [minimumPrice, setMinimumPrice] = useState('')
+    const [maximumPrice, setMaximumPrice] = useState('')
+    const [sortOrder, setSortOrder] = useState('DEFAULT')
 
     useEffect(() => {
         const controller = new AbortController()
@@ -56,9 +60,39 @@ function App() {
 
         return () => controller.abort()
     }, [])
+    const categories = Array.from(
+        new Map(
+            auctions
+                .filter((auction) => auction.categoryId != null)
+                .map((auction) => [
+                    String(auction.categoryId),
+                    {
+                        id: String(auction.categoryId),
+                        name: auction.categoryName ?? 'Sin nombre',
+                    },
+                ])
+        ).values()
+    ).sort((first, second) =>
+        first.name.localeCompare(second.name, 'es')
+    )
 
     // Calculate filters outside the effect on every render.
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase('es')
+
+    const minimumValue =
+        minimumPrice === '' ? null : Number(minimumPrice)
+
+    const maximumValue =
+        maximumPrice === '' ? null : Number(maximumPrice)
+
+    const isInvalidPriceRange =
+        (minimumValue !== null &&
+            (!Number.isFinite(minimumValue) || minimumValue < 0)) ||
+        (maximumValue !== null &&
+            (!Number.isFinite(maximumValue) || maximumValue < 0)) ||
+        (minimumValue !== null &&
+            maximumValue !== null &&
+            minimumValue > maximumValue)
 
     const filteredAuctions = auctions.filter((auction) => {
         const searchableText = [
@@ -77,7 +111,85 @@ function App() {
                 ? ['FINISHED', 'UNSOLD'].includes(auction.state)
                 : auction.state === selectedState)
 
-        return matchesSearch && matchesState
+        const matchesCategory =
+            selectedCategory === 'ALL' ||
+            String(auction.categoryId) === selectedCategory
+
+        const currentPrice = Number(
+            auction.highestBid ?? auction.basePrice
+        )
+
+        const matchesPrice =
+            (minimumValue === null || currentPrice >= minimumValue) &&
+            (maximumValue === null || currentPrice <= maximumValue)
+
+        return (
+            !isInvalidPriceRange &&
+            matchesSearch &&
+            matchesState &&
+            matchesCategory &&
+            matchesPrice
+        )
+    })
+    function getTimeGroup(auction) {
+        if (auction.state === 'ACTIVE') return 0
+        if (auction.state === 'SCHEDULED') return 1
+        return 2
+    }
+
+    function getTargetTimestamp(auction) {
+        const targetDate =
+            auction.state === 'SCHEDULED'
+                ? auction.startDate
+                : auction.endDate
+
+        const timestamp = targetDate
+            ? new Date(targetDate).getTime()
+            : NaN
+
+        return Number.isFinite(timestamp)
+            ? timestamp
+            : Number.MAX_SAFE_INTEGER
+    }
+
+    const sortedAuctions = [...filteredAuctions].sort((first, second) => {
+        if (sortOrder === 'HIGHEST_BID') {
+            const firstHasBids = first.highestBid != null
+            const secondHasBids = second.highestBid != null
+
+            if (firstHasBids !== secondHasBids) {
+                return firstHasBids ? -1 : 1
+            }
+
+            if (firstHasBids && secondHasBids) {
+                const amountDifference =
+                    Number(second.highestBid) - Number(first.highestBid)
+
+                if (amountDifference !== 0) {
+                    return amountDifference
+                }
+            }
+        }
+
+        if (sortOrder === 'ENDING_SOON') {
+            const groupDifference =
+                getTimeGroup(first) - getTimeGroup(second)
+
+            if (groupDifference !== 0) {
+                return groupDifference
+            }
+
+            if (getTimeGroup(first) !== 2) {
+                const timeDifference =
+                    getTargetTimestamp(first) - getTargetTimestamp(second)
+
+                if (timeDifference !== 0) {
+                    return timeDifference
+                }
+            }
+        }
+
+        return first.id - second.id
     })
 
     return (
@@ -92,7 +204,7 @@ function App() {
                 <h1 className="mb-4">Subastas</h1>
 
                 <Row className="g-3 mb-4">
-                    <Col xs={12} md={8}>
+                    <Col xs={12} md={6}>
                         <Form.Group controlId="auctionSearch">
                             <Form.Label>Buscar subastas</Form.Label>
 
@@ -105,7 +217,7 @@ function App() {
                         </Form.Group>
                     </Col>
 
-                    <Col xs={12} md={4}>
+                    <Col xs={12} md={3}>
                         <Form.Group controlId="auctionState">
                             <Form.Label>Estado</Form.Label>
 
@@ -120,7 +232,84 @@ function App() {
                             </Form.Select>
                         </Form.Group>
                     </Col>
+                    <Col xs={12} md={3}>
+                        <Form.Group controlId="auctionCategory">
+                            <Form.Label>Categoría</Form.Label>
+
+                            <Form.Select
+                                value={selectedCategory}
+                                onChange={(event) => setSelectedCategory(event.target.value)}
+                            >
+                                <option value="ALL">Todas las categorías</option>
+
+                                {categories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
                 </Row>
+                <Row className="g-3 mb-4">
+                    <Col xs={12} md={4}>
+                        <Form.Group controlId="minimumPrice">
+                            <Form.Label>Precio mínimo</Form.Label>
+
+                            <Form.Control
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Sin mínimo"
+                                value={minimumPrice}
+                                isInvalid={isInvalidPriceRange}
+                                onChange={(event) => setMinimumPrice(event.target.value)}
+                            />
+                        </Form.Group>
+                    </Col>
+
+                    <Col xs={12} md={4}>
+                        <Form.Group controlId="maximumPrice">
+                            <Form.Label>Precio máximo</Form.Label>
+
+                            <Form.Control
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Sin máximo"
+                                value={maximumPrice}
+                                isInvalid={isInvalidPriceRange}
+                                onChange={(event) => setMaximumPrice(event.target.value)}
+                            />
+                        </Form.Group>
+                    </Col>
+
+                    <Col xs={12} md={4}>
+                        <Form.Group controlId="auctionSort">
+                            <Form.Label>Ordenar por</Form.Label>
+
+                            <Form.Select
+                                value={sortOrder}
+                                onChange={(event) => setSortOrder(event.target.value)}
+                            >
+                                <option value="DEFAULT">Orden predeterminado</option>
+                                <option value="ENDING_SOON">Menor tiempo restante</option>
+                                <option value="HIGHEST_BID">Mayor puja</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                </Row>
+
+                <p className="small text-secondary">
+                    El rango usa la oferta más alta o el precio base si no hay ofertas.
+                </p>
+
+                {isInvalidPriceRange && (
+                    <Alert variant="warning">
+                        Ingresá precios válidos, mayores o iguales a cero. El mínimo no
+                        puede superar al máximo.
+                    </Alert>
+                )}
 
                 {isLoading && (
                     <div role="status">
@@ -139,6 +328,7 @@ function App() {
 
                 {!isLoading &&
                     !error &&
+                    !isInvalidPriceRange &&
                     auctions.length > 0 &&
                     filteredAuctions.length === 0 && (
                         <Alert variant="info">
@@ -148,7 +338,7 @@ function App() {
 
                 {!isLoading && !error && (
                     <Row xs={1} md={2} lg={3} className="g-4">
-                        {filteredAuctions.map((auction) => (
+                        {sortedAuctions.map((auction) => (
                             <Col key={auction.id}>
                                 <AuctionCard auction={auction} />
                             </Col>

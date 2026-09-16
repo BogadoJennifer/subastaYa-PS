@@ -1,5 +1,6 @@
 package unaj.subastaya.service;
 import unaj.subastaya.dto.BidResultDto;
+import unaj.subastaya.exception.*;
 import unaj.subastaya.model.*;
 import unaj.subastaya.repository.*;
 import org.springframework.stereotype.Service;
@@ -7,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class BiddingService {
@@ -18,10 +21,11 @@ public class BiddingService {
     private final UserRepository userRepository;
     private final CategoriesRepository categoriesRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
     public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository,
-                          BidRepository bidRepository, EscrowService escrowService,UserRepository userRepository,
-                          CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository) {
+                          BidRepository bidRepository, EscrowService escrowService, UserRepository userRepository,
+                          CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository, org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate) {
         this.auctionRepository = auctionRepository;
         this.walletRepository = walletRepository;
         this.bidRepository = bidRepository;
@@ -29,6 +33,7 @@ public class BiddingService {
         this.userRepository = userRepository;
         this.categoriesRepository = categoriesRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
@@ -40,7 +45,7 @@ public class BiddingService {
 
         // 1. Validar que la subasta siga activa temporalmente y por estado
         if (!"ACTIVE".equalsIgnoreCase(auction.getState()) || now.isAfter(auction.getEndDate())) {
-            throw new IllegalStateException("La subasta no está activa o ya ha finalizado");
+            throw new AuctionNotActiveException("La subasta no está activa o ya ha finalizado");
         }
 
         // 2. Validar que el comprador no sea el vendedor *revisar*
@@ -50,17 +55,17 @@ public class BiddingService {
 
         // 3. Validar incremento mínimo respecto al precio base
         if (bidAmount.compareTo(auction.getBasePrice().add(auction.getMinimumIncrement())) < 0) {
-            throw new IllegalArgumentException("El monto ofertado no supera el incremento mínimo requerido");
+            throw new InvalidBidAmountException("El monto ofertado no supera el incremento mínimo requerido");
         }
 
         // 4. Validar billetera y saldo
         Wallet walletBuyer = walletRepository.findByUser(auction.getBuyer());
         if (walletBuyer == null) {
-            throw new IllegalArgumentException("Billetera no encontrada");
+            throw new ResourceNotFoundException("Billetera no encontrada");
         }
 
         if (walletBuyer.getAvailableBalance().compareTo(bidAmount) < 0) {
-            throw new IllegalStateException("Saldo insuficiente para ofertar");
+            throw new InsufficientFundsException("Saldo insuficiente para ofertar");
         }
 
         // 5. Anti-Sniping Rule: si restan <= 60 segundos, se extiende 2 minutos
@@ -68,6 +73,13 @@ public class BiddingService {
         if (secondsRemaining <= 60 && secondsRemaining >= 0) {
             auction.setEndDate(auction.getEndDate().plusMinutes(2));
         }
+
+        messagingTemplate.convertAndSend("/topic/auctions/" + auctionId, Optional.of(Map.of(
+                "highestBid", bidAmount,
+                "lastBidderId", buyerId,
+                "endDate", auction.getEndDate(),
+                "bidDate", now
+        )));
 
         return null;
     }

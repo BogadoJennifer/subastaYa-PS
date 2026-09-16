@@ -44,7 +44,7 @@ public class EscrowService {
 
             User oldBidder = beforeHighestBid.getBidder();
 
-           //si hay una nueva puja
+            //si hay una nueva puja
             if (!Objects.equals(
                     oldBidder.getId(),
                     newBidder.getId())) {

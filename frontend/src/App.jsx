@@ -9,6 +9,7 @@ import {
     Row,
     Spinner,
 } from 'react-bootstrap'
+import { getAuctions } from './services/auctionService'
 
 const estados = {
     SCHEDULED: 'Programada',

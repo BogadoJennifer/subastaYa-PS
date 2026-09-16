@@ -21,7 +21,7 @@ public class AuditLog {
 
     private Long userId; // Null si lo ejecutó el worker del sistema
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "detalle_json", columnDefinition = "TEXT")
     private String detailJson; // Payload con los cambios
 
     @Column(nullable = false)

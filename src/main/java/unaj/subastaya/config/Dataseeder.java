@@ -1,4 +1,4 @@
-﻿package unaj.subastaya.config;
+package unaj.subastaya.config;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

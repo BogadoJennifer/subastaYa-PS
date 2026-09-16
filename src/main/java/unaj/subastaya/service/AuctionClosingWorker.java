@@ -71,7 +71,6 @@ public class AuctionClosingWorker {
         Bid winningBid = winningBidOpt.get();
         BigDecimal winningAmount = winningBid.getAmount();
         Long winnerId = winningBid.getBidder().getId();
-        Long buyerId = auction.getBuyer().getId();
         Long vendorId = auction.getVendor().getId();
 
         // debit the amount to the winner
@@ -113,6 +112,7 @@ public class AuctionClosingWorker {
         ledgerTransactionRepository.save(creditTx);
 
         // set the state to FINISHED
+        auction.setBuyer(winningBid.getBidder());
         auction.setState("FINISHED");
         auctionRepository.save(auction);
 

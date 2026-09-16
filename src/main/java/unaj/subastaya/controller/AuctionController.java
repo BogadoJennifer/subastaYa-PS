@@ -4,6 +4,9 @@ import org.springframework.web.bind.annotation.*;
 import unaj.subastaya.model.Auction;
 import unaj.subastaya.repository.AuctionRepository;
 import org.springframework.http.ResponseEntity;
+import unaj.subastaya.dto.AuctionCatalogDto;
+import unaj.subastaya.model.Bid;
+import unaj.subastaya.repository.BidRepository;
 
 import java.util.List;
 
@@ -12,9 +15,14 @@ import java.util.List;
 public class AuctionController {
 
     private final AuctionRepository auctionRepository;
+    private final BidRepository bidRepository;
 
-    public AuctionController(AuctionRepository auctionRepository) {
+    public AuctionController(
+            AuctionRepository auctionRepository,
+            BidRepository bidRepository
+    ) {
         this.auctionRepository = auctionRepository;
+        this.bidRepository = bidRepository;
     }
 
     @GetMapping
@@ -33,5 +41,27 @@ public class AuctionController {
     public ResponseEntity<Auction> createAuction(@RequestBody Auction auction) {
         Auction savedAuction = auctionRepository.save(auction);
         return ResponseEntity.status(201).body(savedAuction);
+    }
+    @GetMapping("/catalog")
+    public List<AuctionCatalogDto> getCatalog() {
+        return auctionRepository.findAll()
+                .stream()
+                .map(auction -> new AuctionCatalogDto(
+                        auction.getId(),
+                        auction.getTitle(),
+                        auction.getDescription(),
+                        auction.getImageUrl(),
+                        auction.getCategories().getId(),
+                        auction.getCategories().getName(),
+                        auction.getBasePrice(),
+                        bidRepository.findHighestBid(auction.getId())
+                                .map(Bid::getAmount)
+                                .orElse(null),
+                        bidRepository.countByAuctionId(auction.getId()),
+                        auction.getState(),
+                        auction.getStartDate(),
+                        auction.getEndDate()
+                ))
+                .toList();
     }
 }

@@ -13,9 +13,14 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     List<Bid> findByAuctionId(Long auctionId);
     List<Bid> findByBidderId(Long bidderId);
+    long countByAuctionId(Long auctionId);
     // Consulta útil para obtener directamente la puja más alta de una subasta
-    Optional<Bid> findTopByAuctionIdOrderByAmountDesc(Long auctionId);
+    Optional<Bid> findFirstByAuctionIdOrderByAmountDescBidDateAscIdAsc(
+            Long auctionId
+    );
+
     default Optional<Bid> findHighestBid(Long auctionId) {
-        return findTopByAuctionIdOrderByAmountDesc(auctionId);
+        return findFirstByAuctionIdOrderByAmountDescBidDateAscIdAsc(auctionId);
     }
+
 }

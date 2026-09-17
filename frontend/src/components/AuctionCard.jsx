@@ -1,5 +1,6 @@
 import { Badge, Card } from 'react-bootstrap'
 import Countdown from './Countdown.jsx'
+import { Link } from 'react-router-dom'
 
 const auctionStates = {
     SCHEDULED: { text: 'Próxima', color: 'primary' },
@@ -64,9 +65,9 @@ function AuctionCard({ auction }) {
                 </Card.Text>
 
                 <div className="auction-price-section">
-          <span className="auction-price-label">
-            {hasBids ? 'Oferta más alta' : 'Precio base'}
-          </span>
+                    <span className="auction-price-label">
+                        {hasBids ? 'Oferta más alta' : 'Precio base'}
+                    </span>
 
                     <strong className="auction-price">
                         {priceFormatter.format(
@@ -75,14 +76,24 @@ function AuctionCard({ auction }) {
                     </strong>
 
                     <span className="auction-bid-count">
-            {auction.bidCount === 0
-                ? 'Sin ofertas todavía'
-                : `${auction.bidCount} ${
-                    auction.bidCount === 1
-                        ? 'oferta realizada'
-                        : 'ofertas realizadas'
-                }`}
-          </span>
+                        {auction.bidCount === 0
+                            ? 'Sin ofertas todavía'
+                            : `${auction.bidCount} ${
+                                auction.bidCount === 1
+                                    ? 'oferta realizada'
+                                    : 'ofertas realizadas'
+                            }`}
+                    </span>
+                </div>
+
+                {/* SALA DE SUBASTA EN VIVO */}
+                <div className="mt-3">
+                    <Link
+                        to={`/auctions/${auction.id}/live`}
+                        className="btn btn-primary w-100"
+                    >
+                        Acceder a la sala en vivo
+                    </Link>
                 </div>
             </Card.Body>
         </Card>

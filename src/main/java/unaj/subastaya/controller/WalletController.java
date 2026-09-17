@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/wallets")
 public class WalletController {
@@ -24,6 +25,26 @@ public class WalletController {
             LedgerTransactionRepository ledgerTransactionRepository) {
         this.walletRepository = walletRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<Map<String, Object>> getWalletByUserId(@PathVariable Long userId) {
+        Wallet wallet = walletRepository.findByUser_Id(userId)
+                .orElse(null);
+
+        if (wallet == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> walletData = new HashMap<>();
+        walletData.put("id", wallet.getId());
+        walletData.put("userId", wallet.getUser().getId());
+        walletData.put("userName", wallet.getUser().getName());
+        walletData.put("totalBalance", wallet.getTotalBalance());
+        walletData.put("retainedBalance", wallet.getRetainedBalance());
+        walletData.put("availableBalance", wallet.getAvailableBalance());
+
+        return ResponseEntity.ok(walletData);
     }
 
     // Endpoint para consultar el desglose de saldos de una billetera

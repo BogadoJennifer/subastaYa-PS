@@ -10,6 +10,7 @@ import unaj.subastaya.repository.BidRepository;
 
 import java.util.List;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auctions")
 public class AuctionController {

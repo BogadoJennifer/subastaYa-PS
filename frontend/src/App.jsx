@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import AuctionCard from './components/AuctionCard.jsx'
+import SiteHeader from './components/SiteHeader.jsx'
+import SiteFooter from './components/SiteFooter.jsx'
 import {
     Alert,
+    Button,
     Col,
     Container,
     Form,
-    Navbar,
     Row,
     Spinner,
 } from 'react-bootstrap'
@@ -198,20 +200,27 @@ function App() {
 
         return first.id - second.id
     })
+    function resetFilters() {
+        setSearchTerm('')
+        setSelectedState('ALL')
+        setSelectedCategory('ALL')
+        setMinimumPrice('')
+        setMaximumPrice('')
+        setSortOrder('DEFAULT')
+    }
 
     return (
         <>
-            <Navbar bg="dark" data-bs-theme="dark">
-                <Container>
-                    <Navbar.Brand>SubastaYa</Navbar.Brand>
-                </Container>
-            </Navbar>
+            <SiteHeader />
 
-            <Container className="py-4">
-                <h1 className="mb-4">Subastas</h1>
+            <Container as="main" id="catalog" className="catalog-section">
+                <h2 className="h4 fw-bold mb-4">Explorá las subastas</h2>
+                <div className="catalog-layout">
+                    <aside className="catalog-sidebar" aria-label="Filtros de subastas">
+                        <h3 className="sidebar-title">Filtrar subastas</h3>
 
                 <Row className="g-3 mb-4">
-                    <Col xs={12} md={6}>
+                    <Col xs={12}>
                         <Form.Group controlId="auctionSearch">
                             <Form.Label>Buscar subastas</Form.Label>
 
@@ -224,7 +233,7 @@ function App() {
                         </Form.Group>
                     </Col>
 
-                    <Col xs={12} md={3}>
+                    <Col xs={12}>
                         <Form.Group controlId="auctionState">
                             <Form.Label>Estado</Form.Label>
 
@@ -239,7 +248,7 @@ function App() {
                             </Form.Select>
                         </Form.Group>
                     </Col>
-                    <Col xs={12} md={3}>
+                    <Col xs={12}>
                         <Form.Group controlId="auctionCategory">
                             <Form.Label>Categoría</Form.Label>
 
@@ -259,7 +268,7 @@ function App() {
                     </Col>
                 </Row>
                 <Row className="g-3 mb-4">
-                    <Col xs={12} md={4}>
+                    <Col xs={12}>
                         <Form.Group controlId="minimumPrice">
                             <Form.Label>Precio mínimo</Form.Label>
 
@@ -275,7 +284,7 @@ function App() {
                         </Form.Group>
                     </Col>
 
-                    <Col xs={12} md={4}>
+                    <Col xs={12}>
                         <Form.Group controlId="maximumPrice">
                             <Form.Label>Precio máximo</Form.Label>
 
@@ -290,21 +299,6 @@ function App() {
                             />
                         </Form.Group>
                     </Col>
-
-                    <Col xs={12} md={4}>
-                        <Form.Group controlId="auctionSort">
-                            <Form.Label>Ordenar por</Form.Label>
-
-                            <Form.Select
-                                value={sortOrder}
-                                onChange={(event) => setSortOrder(event.target.value)}
-                            >
-                                <option value="DEFAULT">Orden predeterminado</option>
-                                <option value="ENDING_SOON">Menor tiempo restante</option>
-                                <option value="HIGHEST_BID">Mayor puja</option>
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
                 </Row>
 
                 <p className="small text-secondary">
@@ -317,6 +311,43 @@ function App() {
                         puede superar al máximo.
                     </Alert>
                 )}
+                        <Button
+                            type="button"
+                            variant="outline-success"
+                            className="w-100"
+                            onClick={resetFilters}
+                        >
+                            Limpiar filtros
+                        </Button>
+                    </aside>
+
+                    <div className="catalog-results">
+                        <div className="catalog-toolbar">
+                            <p className="small text-secondary mb-0">
+                                {isLoading
+                                    ? 'Cargando catálogo…'
+                                    : isInvalidPriceRange
+                                        ? 'Revisá el rango de precios'
+                                        : `Mostrando ${sortedAuctions.length} de ${auctions.length} subastas`}
+                            </p>
+
+                            <Form.Group
+                                controlId="auctionSort"
+                                className="catalog-sort"
+                            >
+                                <Form.Label className="visually-hidden">
+                                    Ordenar subastas
+                                </Form.Label>
+                                <Form.Select
+                                    value={sortOrder}
+                                    onChange={(event) => setSortOrder(event.target.value)}
+                                >
+                                    <option value="DEFAULT">Orden predeterminado</option>
+                                    <option value="ENDING_SOON">Menor tiempo restante</option>
+                                    <option value="HIGHEST_BID">Mayor puja</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </div>
 
                 {isLoading && (
                     <div role="status">
@@ -354,7 +385,7 @@ function App() {
                     )}
 
                 {!isLoading && (
-                    <Row xs={1} md={2} lg={3} className="g-4">
+                    <Row xs={1} md={2} xl={3} className="g-4">
                         {sortedAuctions.map((auction) => (
                             <Col key={auction.id}>
                                 <AuctionCard auction={auction} />
@@ -362,7 +393,10 @@ function App() {
                         ))}
                     </Row>
                 )}
+                    </div>
+                </div>
             </Container>
+            <SiteFooter />
         </>
     )
 }

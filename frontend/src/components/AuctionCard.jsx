@@ -19,75 +19,70 @@ function AuctionCard({ auction }) {
         color: 'secondary',
     }
 
+    const hasBids = auction.highestBid != null
+
     return (
-        <Card className="h-100 shadow-sm overflow-hidden">
-            {auction.imageUrl ? (
-                <Card.Img
-                    variant="top"
-                    src={auction.imageUrl}
-                    alt={auction.title}
-                    loading="lazy"
-                    style={{ height: '200px', objectFit: 'cover' }}
-                />
-            ) : (
-                <div
-                    className="bg-light text-secondary d-flex align-items-center justify-content-center"
-                    style={{ height: '200px' }}
-                >
-                    Sin imagen disponible
-                </div>
-            )}
-
-
-            <Card.Body>
-                <div className="d-flex justify-content-between gap-2 mb-3">
-          <span className="text-secondary small">
-            {auction.categoryName ?? 'Sin categoría'}
-          </span>
-
-                    <Badge bg={statusInfo.color}>
-                        {statusInfo.text}
-                    </Badge>
-                </div>
-
-                <Card.Title as="h2" className="h5">
-                    {auction.title}
-                </Card.Title>
-
-                <Card.Text className="text-secondary">
-                    {auction.description || 'Sin descripción.'}
-                </Card.Text>
-
-                <div className="border-top pt-3">
-                    <div className="small text-secondary">
-                        {auction.highestBid != null
-                            ? 'Oferta más alta'
-                            : 'Precio base'}
+        <Card className="auction-card h-100">
+            <div className="auction-media">
+                {auction.imageUrl ? (
+                    <img
+                        className="auction-image"
+                        src={auction.imageUrl}
+                        alt={auction.title}
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className="auction-image-placeholder">
+                        Sin imagen disponible
                     </div>
+                )}
 
-                    <div className="fs-4 fw-bold">
-                        {priceFormatter.format(
-                            auction.highestBid ?? auction.basePrice
-                        )}
-                    </div>
+                <Badge bg={statusInfo.color} className="auction-status">
+                    {statusInfo.text}
+                </Badge>
 
-                    <div className="small text-secondary mt-2">
-                        {auction.bidCount === 0
-                            ? 'Sin ofertas todavía'
-                            : `${auction.bidCount} ${
-                                auction.bidCount === 1
-                                    ? 'oferta realizada'
-                                    : 'ofertas realizadas'
-                            }`}
-                    </div>
-                </div>
-
-                <div className="border-top mt-3 pt-3">
+                <div className="auction-countdown">
                     <Countdown
                         state={auction.state}
                         startDate={auction.startDate}
                         endDate={auction.endDate}
                     />
+                </div>
+            </div>
+
+            <Card.Body className="auction-body">
+                <p className="auction-category">
+                    {auction.categoryName ?? 'Sin categoría'}
+                </p>
+
+                <Card.Title as="h3" className="auction-title">
+                    {auction.title}
+                </Card.Title>
+
+                <Card.Text className="auction-description">
+                    {auction.description || 'Sin descripción.'}
+                </Card.Text>
+
+                <div className="auction-price-section">
+          <span className="auction-price-label">
+            {hasBids ? 'Oferta más alta' : 'Precio base'}
+          </span>
+
+                    <strong className="auction-price">
+                        {priceFormatter.format(
+                            auction.highestBid ?? auction.basePrice
+                        )}
+                    </strong>
+
+                    <span className="auction-bid-count">
+            {auction.bidCount === 0
+                ? 'Sin ofertas todavía'
+                : `${auction.bidCount} ${
+                    auction.bidCount === 1
+                        ? 'oferta realizada'
+                        : 'ofertas realizadas'
+                }`}
+          </span>
                 </div>
             </Card.Body>
         </Card>

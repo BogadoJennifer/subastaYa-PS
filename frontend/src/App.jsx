@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import AuctionCard from './components/AuctionCard.jsx'
+import LiveBiddingRoom from './pages/LiveBiddingRoomPage.jsx'
 import {
     Alert,
     Col,
@@ -60,6 +62,7 @@ function App() {
 
         return () => controller.abort()
     }, [])
+
     const categories = Array.from(
         new Map(
             auctions
@@ -76,7 +79,6 @@ function App() {
         first.name.localeCompare(second.name, 'es')
     )
 
-    // Calculate filters outside the effect on every render.
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase('es')
 
     const minimumValue =
@@ -131,6 +133,7 @@ function App() {
             matchesPrice
         )
     })
+
     function getTimeGroup(auction) {
         if (auction.state === 'ACTIVE') return 0
         if (auction.state === 'SCHEDULED') return 1
@@ -181,7 +184,8 @@ function App() {
 
             if (getTimeGroup(first) !== 2) {
                 const timeDifference =
-                    getTargetTimestamp(first) - getTargetTimestamp(second)
+                    getTargetTimestamp(first) -
+                    getTargetTimestamp(second)
 
                 if (timeDifference !== 0) {
                     return timeDifference
@@ -193,160 +197,243 @@ function App() {
     })
 
     return (
-        <>
-            <Navbar bg="dark" data-bs-theme="dark">
-                <Container>
-                    <Navbar.Brand>SubastaYa</Navbar.Brand>
-                </Container>
-            </Navbar>
+        <Routes>
 
-            <Container className="py-4">
-                <h1 className="mb-4">Subastas</h1>
+            {/* PÁGINA PRINCIPAL */}
+            <Route
+                path="/"
+                element={
+                    <>
+                        <Navbar bg="dark" data-bs-theme="dark">
+                            <Container>
+                                <Navbar.Brand>
+                                    SubastaYa
+                                </Navbar.Brand>
+                            </Container>
+                        </Navbar>
 
-                <Row className="g-3 mb-4">
-                    <Col xs={12} md={6}>
-                        <Form.Group controlId="auctionSearch">
-                            <Form.Label>Buscar subastas</Form.Label>
+                        <Container className="py-4">
+                            <h1 className="mb-4">
+                                Subastas
+                            </h1>
 
-                            <Form.Control
-                                type="search"
-                                placeholder="Buscar por título o descripción"
-                                value={searchTerm}
-                                onChange={(event) => setSearchTerm(event.target.value)}
-                            />
-                        </Form.Group>
-                    </Col>
+                            <Row className="g-3 mb-4">
+                                <Col xs={12} md={6}>
+                                    <Form.Group controlId="auctionSearch">
+                                        <Form.Label>
+                                            Buscar subastas
+                                        </Form.Label>
 
-                    <Col xs={12} md={3}>
-                        <Form.Group controlId="auctionState">
-                            <Form.Label>Estado</Form.Label>
+                                        <Form.Control
+                                            type="search"
+                                            placeholder="Buscar por título o descripción"
+                                            value={searchTerm}
+                                            onChange={(event) =>
+                                                setSearchTerm(event.target.value)
+                                            }
+                                        />
+                                    </Form.Group>
+                                </Col>
 
-                            <Form.Select
-                                value={selectedState}
-                                onChange={(event) => setSelectedState(event.target.value)}
-                            >
-                                <option value="ALL">Todos los estados</option>
-                                <option value="ACTIVE">Activas</option>
-                                <option value="SCHEDULED">Próximas</option>
-                                <option value="FINISHED">Finalizadas</option>
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col xs={12} md={3}>
-                        <Form.Group controlId="auctionCategory">
-                            <Form.Label>Categoría</Form.Label>
+                                <Col xs={12} md={3}>
+                                    <Form.Group controlId="auctionState">
+                                        <Form.Label>
+                                            Estado
+                                        </Form.Label>
 
-                            <Form.Select
-                                value={selectedCategory}
-                                onChange={(event) => setSelectedCategory(event.target.value)}
-                            >
-                                <option value="ALL">Todas las categorías</option>
+                                        <Form.Select
+                                            value={selectedState}
+                                            onChange={(event) =>
+                                                setSelectedState(event.target.value)
+                                            }
+                                        >
+                                            <option value="ALL">
+                                                Todos los estados
+                                            </option>
+                                            <option value="ACTIVE">
+                                                Activas
+                                            </option>
+                                            <option value="SCHEDULED">
+                                                Próximas
+                                            </option>
+                                            <option value="FINISHED">
+                                                Finalizadas
+                                            </option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
 
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                </Row>
-                <Row className="g-3 mb-4">
-                    <Col xs={12} md={4}>
-                        <Form.Group controlId="minimumPrice">
-                            <Form.Label>Precio mínimo</Form.Label>
+                                <Col xs={12} md={3}>
+                                    <Form.Group controlId="auctionCategory">
+                                        <Form.Label>
+                                            Categoría
+                                        </Form.Label>
 
-                            <Form.Control
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Sin mínimo"
-                                value={minimumPrice}
-                                isInvalid={isInvalidPriceRange}
-                                onChange={(event) => setMinimumPrice(event.target.value)}
-                            />
-                        </Form.Group>
-                    </Col>
+                                        <Form.Select
+                                            value={selectedCategory}
+                                            onChange={(event) =>
+                                                setSelectedCategory(event.target.value)
+                                            }
+                                        >
+                                            <option value="ALL">
+                                                Todas las categorías
+                                            </option>
 
-                    <Col xs={12} md={4}>
-                        <Form.Group controlId="maximumPrice">
-                            <Form.Label>Precio máximo</Form.Label>
+                                            {categories.map((category) => (
+                                                <option
+                                                    key={category.id}
+                                                    value={category.id}
+                                                >
+                                                    {category.name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
 
-                            <Form.Control
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Sin máximo"
-                                value={maximumPrice}
-                                isInvalid={isInvalidPriceRange}
-                                onChange={(event) => setMaximumPrice(event.target.value)}
-                            />
-                        </Form.Group>
-                    </Col>
+                            <Row className="g-3 mb-4">
+                                <Col xs={12} md={4}>
+                                    <Form.Group controlId="minimumPrice">
+                                        <Form.Label>
+                                            Precio mínimo
+                                        </Form.Label>
 
-                    <Col xs={12} md={4}>
-                        <Form.Group controlId="auctionSort">
-                            <Form.Label>Ordenar por</Form.Label>
+                                        <Form.Control
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="Sin mínimo"
+                                            value={minimumPrice}
+                                            isInvalid={isInvalidPriceRange}
+                                            onChange={(event) =>
+                                                setMinimumPrice(event.target.value)
+                                            }
+                                        />
+                                    </Form.Group>
+                                </Col>
 
-                            <Form.Select
-                                value={sortOrder}
-                                onChange={(event) => setSortOrder(event.target.value)}
-                            >
-                                <option value="DEFAULT">Orden predeterminado</option>
-                                <option value="ENDING_SOON">Menor tiempo restante</option>
-                                <option value="HIGHEST_BID">Mayor puja</option>
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                </Row>
+                                <Col xs={12} md={4}>
+                                    <Form.Group controlId="maximumPrice">
+                                        <Form.Label>
+                                            Precio máximo
+                                        </Form.Label>
 
-                <p className="small text-secondary">
-                    El rango usa la oferta más alta o el precio base si no hay ofertas.
-                </p>
+                                        <Form.Control
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="Sin máximo"
+                                            value={maximumPrice}
+                                            isInvalid={isInvalidPriceRange}
+                                            onChange={(event) =>
+                                                setMaximumPrice(event.target.value)
+                                            }
+                                        />
+                                    </Form.Group>
+                                </Col>
 
-                {isInvalidPriceRange && (
-                    <Alert variant="warning">
-                        Ingresá precios válidos, mayores o iguales a cero. El mínimo no
-                        puede superar al máximo.
-                    </Alert>
-                )}
+                                <Col xs={12} md={4}>
+                                    <Form.Group controlId="auctionSort">
+                                        <Form.Label>
+                                            Ordenar por
+                                        </Form.Label>
 
-                {isLoading && (
-                    <div role="status">
-                        <Spinner size="sm" className="me-2" />
-                        Cargando subastas…
-                    </div>
-                )}
+                                        <Form.Select
+                                            value={sortOrder}
+                                            onChange={(event) =>
+                                                setSortOrder(event.target.value)
+                                            }
+                                        >
+                                            <option value="DEFAULT">
+                                                Orden predeterminado
+                                            </option>
 
-                {error && <Alert variant="danger">{error}</Alert>}
+                                            <option value="ENDING_SOON">
+                                                Menor tiempo restante
+                                            </option>
 
-                {!isLoading && !error && auctions.length === 0 && (
-                    <Alert variant="info">
-                        Todavía no hay subastas registradas.
-                    </Alert>
-                )}
+                                            <option value="HIGHEST_BID">
+                                                Mayor puja
+                                            </option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
 
-                {!isLoading &&
-                    !error &&
-                    !isInvalidPriceRange &&
-                    auctions.length > 0 &&
-                    filteredAuctions.length === 0 && (
-                        <Alert variant="info">
-                            No hay subastas que coincidan con tu búsqueda y los filtros.
-                        </Alert>
-                    )}
+                            <p className="small text-secondary">
+                                El rango usa la oferta más alta o el precio
+                                base si no hay ofertas.
+                            </p>
 
-                {!isLoading && !error && (
-                    <Row xs={1} md={2} lg={3} className="g-4">
-                        {sortedAuctions.map((auction) => (
-                            <Col key={auction.id}>
-                                <AuctionCard auction={auction} />
-                            </Col>
-                        ))}
-                    </Row>
-                )}
-            </Container>
-        </>
+                            {isInvalidPriceRange && (
+                                <Alert variant="warning">
+                                    Ingresá precios válidos, mayores o
+                                    iguales a cero. El mínimo no puede
+                                    superar al máximo.
+                                </Alert>
+                            )}
+
+                            {isLoading && (
+                                <div role="status">
+                                    <Spinner size="sm" className="me-2" />
+                                    Cargando subastas…
+                                </div>
+                            )}
+
+                            {error && (
+                                <Alert variant="danger">
+                                    {error}
+                                </Alert>
+                            )}
+
+                            {!isLoading &&
+                                !error &&
+                                auctions.length === 0 && (
+                                    <Alert variant="info">
+                                        Todavía no hay subastas registradas.
+                                    </Alert>
+                                )}
+
+                            {!isLoading &&
+                                !error &&
+                                !isInvalidPriceRange &&
+                                auctions.length > 0 &&
+                                filteredAuctions.length === 0 && (
+                                    <Alert variant="info">
+                                        No hay subastas que coincidan con
+                                        tu búsqueda y los filtros.
+                                    </Alert>
+                                )}
+
+                            {!isLoading && !error && (
+                                <Row
+                                    xs={1}
+                                    md={2}
+                                    lg={3}
+                                    className="g-4"
+                                >
+                                    {sortedAuctions.map((auction) => (
+                                        <Col key={auction.id}>
+                                            <AuctionCard
+                                                auction={auction}
+                                            />
+                                        </Col>
+                                    ))}
+                                </Row>
+                            )}
+                        </Container>
+                    </>
+                }
+            />
+
+            {/* SALA DE SUBASTA EN VIVO */}
+            <Route
+                path="/auctions/:auctionId/live"
+                element={<LiveBiddingRoom />}
+            />
+
+        </Routes>
     )
 }
 

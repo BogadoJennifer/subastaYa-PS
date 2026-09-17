@@ -1,20 +1,20 @@
-import { CountdownTimer } from '../components/CountdownTimer';
-import { BidConsole } from '../components/BidConsole';
-import { BidHistoryList } from '../components/BidHistoryList';
+import { useParams } from 'react-router-dom'
 
-export const LiveAuctionPage = () => {
-    // ...conexión STOMP y estados...
+function LiveBiddingRoom() {
+
+    const { auctionId } = useParams()
 
     return (
-        <div className="room-container">
-            <h1>{auction.title}</h1>
-            <CountdownTimer endDate={auction.endDate} />
-            <BidConsole
-                currentPrice={auction.currentPrice}
-                minIncrement={auction.minIncrement}
-                onBid={handleBid}
-            />
-            <BidHistoryList bids={bids} />
+        <div className="container py-4">
+
+            <h1>Sala de Subasta en Vivo</h1>
+
+            <p>
+                Subasta seleccionada: {auctionId}
+            </p>
+
         </div>
-    );
-};
+    )
+}
+
+export default LiveBiddingRoom

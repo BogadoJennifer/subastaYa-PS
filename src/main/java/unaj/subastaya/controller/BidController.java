@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auctions/{auctionId}/bids")
 public class BidController {

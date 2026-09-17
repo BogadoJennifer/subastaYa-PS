@@ -1,5 +1,6 @@
-import { Badge, Card } from 'react-bootstrap'
+import { Badge, Card, Button } from 'react-bootstrap'
 import Countdown from './Countdown.jsx'
+import { Link } from 'react-router-dom';
 
 const auctionStates = {
     SCHEDULED: { text: 'Próxima', color: 'primary' },
@@ -89,6 +90,17 @@ function AuctionCard({ auction }) {
                         endDate={auction.endDate}
                     />
                 </div>
+
+                <div className="mt-3">
+                    <Link
+                        to={`/auctions/${auction.id}/live`}
+                        className="btn btn-primary w-100"
+                    >
+                        Acceder a la sala en vivo
+                    </Link>
+                </div>
+
+
             </Card.Body>
         </Card>
     )

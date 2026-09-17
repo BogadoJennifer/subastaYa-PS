@@ -124,7 +124,10 @@ function AuctionCatalog() {
                         <Row xs={1} md={2} xl={3} className="g-4">
                             {sortedAuctions.map((auction) => (
                                 <Col key={auction.id}>
-                                    <AuctionCard auction={auction} />
+                                    <AuctionCard
+                                        auction={auction}
+                                        onEnterRoom={() => onSelectAuction(auction.id)}
+                                    />
                                 </Col>
                             ))}
                         </Row>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import Countdown from '../components/Countdown.jsx'
+import BidHistory from "../components/BidHistory.jsx";
 
 function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
     const { auctionId: paramId } = useParams()
@@ -14,6 +15,7 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isConnected, setIsConnected] = useState(false)
     const [currentTime, setCurrentTime] = useState(() => Date.now())
+    const [bids, setBids] = useState([])
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -46,20 +48,39 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                     refreshPending = false
 
                     try {
-                        const response = await fetch(
-                            `/api/auctions/${id}/details`,
-                            { signal: controller.signal }
-                        )
+                        const [auctionResponse, bidsResponse] = await Promise.all([
+                            fetch(`/api/auctions/${id}/details`, {
+                                signal: controller.signal,
+                            }),
+                            fetch(`/api/auctions/${id}/bids`, {
+                                signal: controller.signal,
+                            }),
+                        ])
 
-                        if (!response.ok) {
+                        if (!auctionResponse.ok) {
                             throw new Error(
-                                `No se pudo actualizar la subasta (${response.status})`
+                                `No se pudo actualizar la subasta (${auctionResponse.status})`
                             )
                         }
 
-                        const data = await response.json()
+                        if (!bidsResponse.ok) {
+                            throw new Error(
+                                `No se pudo cargar el historial (${bidsResponse.status})`
+                            )
+                        }
+
+                        const [data, bidHistory] = await Promise.all([
+                            auctionResponse.json(),
+                            bidsResponse.json(),
+                        ])
+
+                        if (!Array.isArray(bidHistory)) {
+                            throw new Error('El historial recibido tiene un formato inesperado')
+                        }
 
                         if (!active) return
+
+                        setBids(bidHistory)
 
                         setAuction((previousAuction) => {
                             // Preserve a newer bid received through the POST response.
@@ -271,6 +292,10 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
             </button>
 
             {message && <div className="alert alert-info mt-3">{message}</div>}
+            <BidHistory
+                bids={bids}
+                currentUserId={currentUserId}
+            />
         </div>
     )
 }

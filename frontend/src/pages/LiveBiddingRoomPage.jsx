@@ -5,6 +5,7 @@ import Countdown from '../components/Countdown.jsx'
 import BidHistory from "../components/BidHistory.jsx";
 import { BidConsole } from '../components/BidConsole.jsx'
 import BidStatus from "../components/BidStatus.jsx";
+import { Toast, ToastContainer } from 'react-bootstrap'
 
 function LiveBiddingRoomPage({ auctionId: propId }) {
     const { auctionId: paramId } = useParams()
@@ -25,6 +26,8 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
     const [isConnected, setIsConnected] = useState(false)
     const [currentTime, setCurrentTime] = useState(() => Date.now())
     const [bids, setBids] = useState([])
+    const [feedbackVariant, setFeedbackVariant] = useState('info')
+    const [extensionMessage, setExtensionMessage] = useState('')
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -41,6 +44,7 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
         let active = true
         let refreshing = false
         let refreshPending = false
+        let latestEndTimestamp = null
 
         // Serialize refreshes so older requests cannot finish after newer ones.
         async function refreshAuction() {
@@ -91,6 +95,31 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
                         }
 
                         if (!active) return
+
+                        const updatedEndTimestamp = new Date(data.endDate).getTime()
+
+                        if (Number.isFinite(updatedEndTimestamp)) {
+                            if (
+                                latestEndTimestamp !== null &&
+                                updatedEndTimestamp > latestEndTimestamp
+                            ) {
+                                const formattedEndTime = new Intl.DateTimeFormat('es-AR', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: false,
+                                }).format(new Date(updatedEndTimestamp))
+
+                                setExtensionMessage(
+                                    `Se extendió el tiempo de la subasta. Nuevo cierre: ${formattedEndTime}.`
+                                )
+                            }
+
+                            latestEndTimestamp = Math.max(
+                                latestEndTimestamp ?? updatedEndTimestamp,
+                                updatedEndTimestamp
+                            )
+                        }
 
                         setBids(bidHistory)
 
@@ -200,6 +229,7 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
         )
 
         if (!Number.isFinite(amount) || amount < minimumAmount) {
+            setFeedbackVariant('danger')
             setMessage(
                 `La oferta debe ser de al menos $${minimumAmount}.`
             )
@@ -207,7 +237,7 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
         }
 
         setIsSubmitting(true)
-        setMessage('Enviando oferta...')
+        setMessage('')
 
         try {
             const response = await fetch(`/api/auctions/${id}/bids`, {
@@ -222,6 +252,7 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
             const result = await response.json().catch(() => null)
 
             if (!response.ok) {
+                setFeedbackVariant('danger')
                 setMessage(
                     result?.message ??
                     `No se pudo registrar la oferta (${response.status})`
@@ -230,6 +261,7 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
             }
 
             if (result?.amount == null || !result?.endDate) {
+                setFeedbackVariant('warning')
                 setMessage(
                     'El servidor respondió sin los datos esperados. Recargá la página para verificar si la oferta se registró.'
                 )
@@ -260,16 +292,12 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
                 currency: 'ARS',
             }).format(result.amount)
 
-            setMessage(
-                `¡Oferta de ${formattedAmount} registrada!${
-                    result.wasExtended
-                        ? ' La subasta se extendió 2 minutos.'
-                        : ''
-                }`
-            )
+            setFeedbackVariant('success')
+            setMessage(`¡Oferta de ${formattedAmount} registrada!`)
 
             return true
         } catch {
+            setFeedbackVariant('warning')
             setMessage(
                 'No se pudo confirmar la respuesta del servidor. Recargá la página para verificar si la oferta se registró.'
             )
@@ -327,7 +355,65 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
                 isSubmitting={isSubmitting}
             />
 
-            {message && <div className="alert alert-info mt-3">{message}</div>}
+            <ToastContainer
+                position="bottom-end"
+                className="p-3"
+                style={{
+                    position: 'fixed',
+                    zIndex: 1080,
+                    maxWidth: '100vw',
+                }}
+            >
+                <Toast
+                    show={Boolean(message)}
+                    onClose={() => setMessage('')}
+                    bg={feedbackVariant}
+                    autohide={feedbackVariant === 'success'}
+                    delay={6000}
+                    role={feedbackVariant === 'danger' ? 'alert' : 'status'}
+                    aria-live={feedbackVariant === 'danger' ? 'assertive' : 'polite'}
+                    aria-atomic="true"
+                >
+                    <Toast.Header>
+                        <strong className="me-auto">
+                            {feedbackVariant === 'success'
+                                ? 'Oferta registrada'
+                                : feedbackVariant === 'danger'
+                                    ? 'Oferta rechazada'
+                                    : 'Verificá el resultado'}
+                        </strong>
+                    </Toast.Header>
+
+                    <Toast.Body
+                        className={
+                            feedbackVariant === 'success' ||
+                            feedbackVariant === 'danger'
+                                ? 'text-white'
+                                : 'text-dark'
+                        }
+                    >
+                        {message}
+                    </Toast.Body>
+                </Toast>
+
+                <Toast
+                    show={Boolean(extensionMessage)}
+                    onClose={() => setExtensionMessage('')}
+                    bg="warning"
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                >
+                    <Toast.Header>
+                        <strong className="me-auto">Tiempo extendido</strong>
+                    </Toast.Header>
+
+                    <Toast.Body className="text-dark">
+                        {extensionMessage}
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer>
+
             <BidHistory
                 bids={bids}
                 currentUserId={currentUserId}

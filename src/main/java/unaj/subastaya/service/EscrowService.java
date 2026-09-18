@@ -2,15 +2,20 @@ package unaj.subastaya.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import unaj.subastaya.model.*;
+import unaj.subastaya.exception.InsufficientFundsException;
+import unaj.subastaya.exception.InvalidBidAmountException;
+import unaj.subastaya.exception.ResourceNotFoundException;
+import unaj.subastaya.model.Auction;
+import unaj.subastaya.model.Bid;
+import unaj.subastaya.model.LedgerTransaction;
+import unaj.subastaya.model.User;
+import unaj.subastaya.model.Wallet;
 import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.repository.LedgerTransactionRepository;
 import unaj.subastaya.repository.WalletRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Service
 public class EscrowService {
@@ -22,8 +27,8 @@ public class EscrowService {
     public EscrowService(
             BidRepository bidRepository,
             WalletRepository walletRepository,
-            LedgerTransactionRepository ledgerTransactionRepository) {
-
+            LedgerTransactionRepository ledgerTransactionRepository
+    ) {
         this.bidRepository = bidRepository;
         this.walletRepository = walletRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
@@ -33,100 +38,104 @@ public class EscrowService {
     public void processEscrow(
             Auction auction,
             User newBidder,
-            BigDecimal amount) {
-
-        // Buscar la puja más alta ANTERIOR
-        Bid beforeHighestBid = bidRepository
-                .findHighestBid(auction.getId())
-                .orElse(null);
-
-        if (beforeHighestBid != null) {
-
-            User oldBidder = beforeHighestBid.getBidder();
-
-            //si hay una nueva puja
-            if (!Objects.equals(
-                    oldBidder.getId(),
-                    newBidder.getId())) {
-
-                Wallet previousWallet =
-                        walletRepository.findByUser(oldBidder);
-
-                BigDecimal previousAmount =
-                        beforeHighestBid.getAmount();
-
-                // retengo el monto de la puja
-                previousWallet.setRetainedBalance(
-                        previousWallet
-                                .getRetainedBalance()
-                                .subtract(previousAmount)
-                );
-
-                // liberamos el monto de la puja
-                previousWallet.setAvailableBalance(
-                        previousWallet
-                                .getAvailableBalance()
-                                .add(previousAmount)
-                );
-
-                walletRepository.save(previousWallet);
-
-                // Registrar la liberación en el Ledger
-                LedgerTransaction releaseTransaction =
-                        new LedgerTransaction();
-
-                releaseTransaction.setWallet(previousWallet);
-                releaseTransaction.setType("RELEASE");
-                releaseTransaction.setAmount(previousAmount);
-                releaseTransaction.setDate(LocalDateTime.now());
-                releaseTransaction.setAuctionId(auction.getId());
-
-                ledgerTransactionRepository.save(releaseTransaction);
-            }
-        }
-
-
-        Wallet newBidderWallet =
-                walletRepository.findByUser(newBidder);
-
-
-        // Verificar que tenga saldo suficiente
-        if (newBidderWallet
-                .getAvailableBalance()
-                .compareTo(amount) < 0) {
-
-            throw new IllegalArgumentException(
-                    "El usuario no tiene saldo disponible suficiente"
+            BigDecimal amount
+    ) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new InvalidBidAmountException(
+                    "El importe de la oferta debe ser positivo"
             );
         }
 
+        Bid previousHighestBid = bidRepository
+                .findHighestBid(auction.getId())
+                .orElse(null);
 
-        // Restar el monto del saldo disponible
-        newBidderWallet.setAvailableBalance(
-                newBidderWallet
-                        .getAvailableBalance()
-                        .subtract(amount)
+        // Release the previous winning bid, even for the same bidder.
+        if (previousHighestBid != null) {
+            Wallet previousWallet = findWallet(
+                    previousHighestBid.getBidder().getId()
+            );
+
+            BigDecimal previousAmount = previousHighestBid.getAmount();
+
+            if (previousWallet.getRetainedBalance()
+                    .compareTo(previousAmount) < 0) {
+                throw new IllegalStateException(
+                        "El saldo retenido no cubre la oferta anterior"
+                );
+            }
+
+            previousWallet.setRetainedBalance(
+                    previousWallet.getRetainedBalance()
+                            .subtract(previousAmount)
+            );
+
+            updateAvailableBalance(previousWallet);
+            walletRepository.save(previousWallet);
+
+            recordTransaction(
+                    previousWallet,
+                    auction.getId(),
+                    "RELEASE",
+                    previousAmount
+            );
+        }
+
+        Wallet bidderWallet = findWallet(newBidder.getId());
+
+        updateAvailableBalance(bidderWallet);
+
+        if (bidderWallet.getAvailableBalance().compareTo(amount) < 0) {
+            throw new InsufficientFundsException(
+                    "Saldo insuficiente para ofertar"
+            );
+        }
+
+        // Hold the full amount of the new winning bid.
+        bidderWallet.setRetainedBalance(
+                bidderWallet.getRetainedBalance().add(amount)
         );
 
-        // Agregar el monto al saldo retenido
-        newBidderWallet.setRetainedBalance(
-                newBidderWallet
-                        .getRetainedBalance()
-                        .add(amount)
+        updateAvailableBalance(bidderWallet);
+        walletRepository.save(bidderWallet);
+
+        recordTransaction(
+                bidderWallet,
+                auction.getId(),
+                "HOLD",
+                amount
         );
+    }
 
-        walletRepository.save(newBidderWallet);
+    private Wallet findWallet(Long userId) {
+        return walletRepository.findByUser_Id(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Billetera no encontrada para el usuario " + userId
+                        )
+                );
+    }
 
-        // Registrar la retención en el Ledger
-        LedgerTransaction holdTransaction =
-                new LedgerTransaction();
+    private void updateAvailableBalance(Wallet wallet) {
+        wallet.setAvailableBalance(
+                wallet.getTotalBalance()
+                        .subtract(wallet.getRetainedBalance())
+        );
+    }
 
-        holdTransaction.setWallet(newBidderWallet);
-        holdTransaction.setType("HOLD");
-        holdTransaction.setAmount(amount);
-        holdTransaction.setDate(LocalDateTime.now());
-        holdTransaction.setAuctionId(auction.getId());
+    private void recordTransaction(
+            Wallet wallet,
+            Long auctionId,
+            String type,
+            BigDecimal amount
+    ) {
+        LedgerTransaction transaction = new LedgerTransaction();
+        transaction.setWallet(wallet);
+        transaction.setAuctionId(auctionId);
+        transaction.setType(type);
+        transaction.setAmount(amount);
+        transaction.setDate(LocalDateTime.now());
 
-        ledgerTransactionRepository.save(holdTransaction);
+        ledgerTransactionRepository.save(transaction);
     }
 }

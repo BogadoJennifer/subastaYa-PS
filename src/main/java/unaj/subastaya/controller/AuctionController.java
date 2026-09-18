@@ -7,8 +7,10 @@ import org.springframework.http.ResponseEntity;
 import unaj.subastaya.dto.AuctionCatalogDto;
 import unaj.subastaya.model.Bid;
 import unaj.subastaya.repository.BidRepository;
+import unaj.subastaya.dto.AuctionDetailsDto;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -65,4 +67,32 @@ public class AuctionController {
                 ))
                 .toList();
     }
+    @GetMapping("/{id}/details")
+    public ResponseEntity<AuctionDetailsDto> getAuctionDetails(
+            @PathVariable Long id
+    ) {
+        return auctionRepository.findById(id)
+                .map(auction -> {
+                    BigDecimal highestBid = bidRepository.findHighestBid(id)
+                            .map(Bid::getAmount)
+                            .orElse(null);
+
+                    AuctionDetailsDto details = new AuctionDetailsDto(
+                            auction.getId(),
+                            auction.getTitle(),
+                            auction.getDescription(),
+                            auction.getBasePrice(),
+                            auction.getMinimumIncrement(),
+                            highestBid,
+                            auction.getState(),
+                            auction.getStartDate(),
+                            auction.getEndDate()
+                    );
+
+                    return ResponseEntity.ok(details);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
 }

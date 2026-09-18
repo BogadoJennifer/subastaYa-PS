@@ -5,7 +5,8 @@ import unaj.subastaya.model.*;
 import unaj.subastaya.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -37,51 +38,131 @@ public class BiddingService {
     }
 
     @Transactional
-    public BidResultDto registerBid(Long auctionId, Long buyerId, BigDecimal bidAmount) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new IllegalArgumentException("Subasta no encontrada"));
+    public BidResultDto registerBid(
+            Long auctionId,
+            Long bidderId,
+            BigDecimal bidAmount
+    ) {
+        if (bidderId == null) {
+            throw new InvalidBidAmountException(
+                    "Debés indicar el usuario que realiza la oferta"
+            );
+        }
+
+        if (bidAmount == null
+                || bidAmount.signum() <= 0
+                || bidAmount.stripTrailingZeros().scale() > 2) {
+            throw new InvalidBidAmountException(
+                    "La oferta debe ser positiva y tener como máximo dos decimales"
+            );
+        }
+
+        Auction auction = auctionRepository.findForBidding(auctionId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subasta no encontrada")
+                );
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 1. Validar que la subasta siga activa temporalmente y por estado
-        if (!"ACTIVE".equalsIgnoreCase(auction.getState()) || now.isAfter(auction.getEndDate())) {
-            throw new AuctionNotActiveException("La subasta no está activa o ya ha finalizado");
+        if (!"ACTIVE".equals(auction.getState())
+                || now.isBefore(auction.getStartDate())
+                || !now.isBefore(auction.getEndDate())) {
+            throw new AuctionNotActiveException(
+                    "La subasta no está activa en este momento"
+            );
         }
 
-        // 2. Validar que el comprador no sea el vendedor *revisar*
-        if (auction.getBuyer() != null && auction.getBuyer().getId().equals(buyerId)) {
-            throw new IllegalArgumentException("El vendedor no puede ofertar en su propia subasta");
+        User bidder = userRepository.findById(bidderId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Usuario no encontrado")
+                );
+
+        if (auction.getVendor() != null
+                && auction.getVendor().getId().equals(bidderId)) {
+            throw new InvalidBidAmountException(
+                    "El vendedor no puede ofertar en su propia subasta"
+            );
         }
 
-        // 3. Validar incremento mínimo respecto al precio base
-        if (bidAmount.compareTo(auction.getBasePrice().add(auction.getMinimumIncrement())) < 0) {
-            throw new InvalidBidAmountException("El monto ofertado no supera el incremento mínimo requerido");
+        BigDecimal currentPrice = bidRepository
+                .findHighestBid(auctionId)
+                .map(Bid::getAmount)
+                .orElse(auction.getBasePrice());
+
+        BigDecimal minimumBid = currentPrice.add(
+                auction.getMinimumIncrement()
+        );
+
+        if (bidAmount.compareTo(minimumBid) < 0) {
+            throw new InvalidBidAmountException(
+                    "La oferta mínima es $" + minimumBid.toPlainString()
+            );
         }
 
-        // 4. Validar billetera y saldo
-        Wallet walletBuyer = walletRepository.findByUser(auction.getBuyer());
-        if (walletBuyer == null) {
-            throw new ResourceNotFoundException("Billetera no encontrada");
-        }
+        // Process escrow before saving the new bid.
+        escrowService.processEscrow(auction, bidder, bidAmount);
 
-        if (walletBuyer.getAvailableBalance().compareTo(bidAmount) < 0) {
-            throw new InsufficientFundsException("Saldo insuficiente para ofertar");
-        }
+        Bid bid = new Bid();
+        bid.setAuction(auction);
+        bid.setBidder(bidder);
+        bid.setAmount(bidAmount);
+        bid.setBidDate(now);
 
-        // 5. Anti-Sniping Rule: si restan <= 60 segundos, se extiende 2 minutos
-        long secondsRemaining = Duration.between(now, auction.getEndDate()).getSeconds();
-        if (secondsRemaining <= 60 && secondsRemaining >= 0) {
+        Bid savedBid = bidRepository.save(bid);
+
+        Duration remainingTime = Duration.between(
+                now,
+                auction.getEndDate()
+        );
+
+        boolean wasExtended =
+                remainingTime.compareTo(Duration.ofSeconds(60)) <= 0;
+
+        if (wasExtended) {
             auction.setEndDate(auction.getEndDate().plusMinutes(2));
         }
 
-        messagingTemplate.convertAndSend("/topic/auctions/" + auctionId, Optional.of(Map.of(
-                "highestBid", bidAmount,
-                "lastBidderId", buyerId,
-                "endDate", auction.getEndDate(),
-                "bidDate", now
-        )));
+        auctionRepository.save(auction);
 
-        return null;
+        BidResultDto result = new BidResultDto(
+                savedBid.getId(),
+                savedBid.getAmount(),
+                auction.getEndDate(),
+                wasExtended
+        );
+
+        Map<String, Object> notification = Map.of(
+                "bidId", savedBid.getId(),
+                "highestBid", savedBid.getAmount(),
+                "lastBidderId", bidderId,
+                "endDate", auction.getEndDate(),
+                "bidDate", savedBid.getBidDate()
+        );
+
+        // Notify clients only after the transaction commits successfully.
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            messagingTemplate.convertAndSend(
+                                    "/topic/auctions/" + auctionId,
+                                    Optional.of(notification)
+                            );
+                        } catch (RuntimeException exception) {
+                            org.slf4j.LoggerFactory
+                                    .getLogger(BiddingService.class)
+                                    .error(
+                                            "Bid {} was saved, but its notification failed",
+                                            savedBid.getId(),
+                                            exception
+                                    );
+                        }
+                    }
+                }
+        );
+
+        return result;
     }
 
     // Methods to create entities

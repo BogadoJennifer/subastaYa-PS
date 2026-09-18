@@ -193,7 +193,7 @@ class Dataseeder {
                     new BigDecimal("60000"),
                     new BigDecimal("5000"),
                     LocalDateTime.now(),
-                    LocalDateTime.now().plusDays(7),
+                    LocalDateTime.now().plusMinutes(2),
                     "ACTIVE"
             );
 

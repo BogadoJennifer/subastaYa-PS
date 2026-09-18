@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import unaj.subastaya.model.Auction;
 import unaj.subastaya.model.Bid;
 import unaj.subastaya.model.LedgerTransaction;
@@ -17,6 +20,7 @@ import unaj.subastaya.repository.WalletRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -28,15 +32,17 @@ public class AuctionClosingWorker {
     private final BidRepository bidRepository;
     private final WalletRepository walletRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
-
+    private final SimpMessagingTemplate messagingTemplate;
     public AuctionClosingWorker(AuctionRepository auctionRepository,
                                 BidRepository bidRepository,
                                 WalletRepository walletRepository,
-                                LedgerTransactionRepository ledgerTransactionRepository) {
+                                LedgerTransactionRepository ledgerTransactionRepository,
+                                SimpMessagingTemplate messagingTemplate) {
         this.auctionRepository = auctionRepository;
         this.bidRepository = bidRepository;
         this.walletRepository = walletRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Scheduled(fixedRate = 10000)
@@ -56,6 +62,36 @@ public class AuctionClosingWorker {
         }
     }
 
+    private void notifyAuctionClosed(Auction auction) {
+        Long auctionId = auction.getId();
+
+        Map<String, Object> notification = Map.of(
+                "type", "AUCTION_CLOSED",
+                "auctionId", auctionId,
+                "state", auction.getState()
+        );
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            messagingTemplate.convertAndSend(
+                                    "/topic/auctions/" + auctionId,
+                                    Optional.of(notification)
+                            );
+                        } catch (RuntimeException exception) {
+                            log.error(
+                                    "Auction {} was closed, but its notification failed",
+                                    auctionId,
+                                    exception
+                            );
+                        }
+                    }
+                }
+        );
+    }
+
     private void processAuctionClosing(Auction auction) {
 
         Optional<Bid> winningBidOpt = bidRepository.findHighestBid(auction.getId());
@@ -64,7 +100,14 @@ public class AuctionClosingWorker {
         if (winningBidOpt.isEmpty()) {
             auction.setState("UNSOLD");
             auctionRepository.save(auction);
-            log.info("Auditoría: Subasta id={} marcada como DESSERT (sin ofertas)", auction.getId());
+
+            notifyAuctionClosed(auction);
+
+            log.info(
+                    "Auction {} closed without bids",
+                    auction.getId()
+            );
+
             return;
         }
         //if found bids, set the state to FINISHED
@@ -115,8 +158,10 @@ public class AuctionClosingWorker {
         auction.setBuyer(winningBid.getBidder());
         auction.setState("FINISHED");
         auctionRepository.save(auction);
+        notifyAuctionClosed(auction);
 
         log.info("Auditoría Venta: Subasta id={} FINISHED. Ganador id={}, Vendedor id={}, Monto={}",
                 auction.getId(), winnerId, vendorId, winningAmount);
+
     }
 }

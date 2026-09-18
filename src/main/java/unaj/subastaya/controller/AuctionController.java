@@ -69,13 +69,20 @@ public class AuctionController {
     }
     @GetMapping("/{id}/details")
     public ResponseEntity<AuctionDetailsDto> getAuctionDetails(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @RequestParam(required = false) Long userId
     ) {
         return auctionRepository.findById(id)
                 .map(auction -> {
-                    BigDecimal highestBid = bidRepository.findHighestBid(id)
-                            .map(Bid::getAmount)
+                    Bid highestBid = bidRepository.findHighestBid(id)
                             .orElse(null);
+
+                    boolean currentUserHasBid =
+                            userId != null
+                                    && bidRepository.existsByAuctionIdAndBidderId(
+                                    id,
+                                    userId
+                            );
 
                     AuctionDetailsDto details = new AuctionDetailsDto(
                             auction.getId(),
@@ -83,10 +90,16 @@ public class AuctionController {
                             auction.getDescription(),
                             auction.getBasePrice(),
                             auction.getMinimumIncrement(),
-                            highestBid,
+                            highestBid != null
+                                    ? highestBid.getAmount()
+                                    : null,
                             auction.getState(),
                             auction.getStartDate(),
-                            auction.getEndDate()
+                            auction.getEndDate(),
+                            highestBid != null
+                                    ? highestBid.getBidder().getId()
+                                    : null,
+                            currentUserHasBid
                     );
 
                     return ResponseEntity.ok(details);

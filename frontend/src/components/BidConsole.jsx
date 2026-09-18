@@ -1,75 +1,129 @@
-import React, { useState } from 'react';
+import { useState } from 'react'
 
-export const BidConsole = ({ currentPrice, minIncrement, onBid, disabled }) => {
-    const [customAmount, setCustomAmount] = useState('');
-    const nextMinBid = Number(currentPrice) + Number(minIncrement);
+const priceFormatter = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+})
 
-    const handleSubmitCustom = (e) => {
-        e.preventDefault();
-        const parsedAmount = parseFloat(customAmount);
-        if (!parsedAmount || parsedAmount < nextMinBid) {
-            alert(`El monto debe ser igual o mayor al mínimo sugerido ($${nextMinBid})`);
-            return;
+export function BidConsole({
+                               currentPrice,
+                               minIncrement,
+                               onBid,
+                               disabled,
+                               isSubmitting,
+                           }) {
+    const [customAmount, setCustomAmount] = useState('')
+    const [validationError, setValidationError] = useState('')
+
+    const nextMinimumBid = Number(
+        (Number(currentPrice) + Number(minIncrement)).toFixed(2)
+    )
+
+    const isDisabled = disabled || isSubmitting
+
+    async function handleCustomSubmit(event) {
+        event.preventDefault()
+
+        if (isDisabled) return
+
+        const normalizedAmount = customAmount.trim()
+
+        if (!/^\d+(?:\.\d{1,2})?$/.test(normalizedAmount)) {
+            setValidationError(
+                'Ingresá un monto positivo con un máximo de dos decimales.'
+            )
+            return
         }
-        onBid(parsedAmount);
-        setCustomAmount('');
-    };
+
+        const amount = Number(normalizedAmount)
+
+        if (!Number.isFinite(amount) || amount < nextMinimumBid) {
+            setValidationError(
+                `La oferta debe ser de al menos ${
+                    priceFormatter.format(nextMinimumBid)
+                }.`
+            )
+            return
+        }
+
+        setValidationError('')
+
+        const wasAccepted = await onBid(amount)
+
+        if (wasAccepted) {
+            setCustomAmount('')
+        }
+    }
 
     return (
-        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>Consola de Oferta</h3>
+        <section className="border rounded p-3 mt-3">
+            <h3 className="h5">Realizar una oferta</h3>
 
-            {/* Botón de Puja Rápida Sugerida */}
             <button
                 type="button"
-                disabled={disabled}
-                onClick={() => onBid(nextMinBid)}
-                style={{
-                    width: '100%',
-                    padding: '12px',
-                    backgroundColor: disabled ? '#cbd5e1' : '#2563eb',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                    marginBottom: '12px',
+                className="btn btn-success w-100 mb-3"
+                disabled={isDisabled}
+                onClick={() => {
+                    setValidationError('')
+                    void onBid(nextMinimumBid)
                 }}
             >
-                Pujar Mínimo Sugerido: ${nextMinBid.toLocaleString()}
+                {isSubmitting
+                    ? 'Enviando oferta...'
+                    : `Ofertar ${priceFormatter.format(nextMinimumBid)}`}
             </button>
 
-            {/* Formulario para Puja Personalizada */}
-            <form onSubmit={handleSubmitCustom} style={{ display: 'flex', gap: '8px' }}>
-                <input
-                    type="number"
-                    step="0.01"
-                    placeholder={`Monto mayor a $${nextMinBid}`}
-                    value={customAmount}
-                    disabled={disabled}
-                    onChange={(e) => setCustomAmount(e.target.value)}
-                    style={{
-                        flex: 1,
-                        padding: '10px',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '6px',
-                    }}
-                />
-                <button
-                    type="submit"
-                    disabled={disabled || !customAmount}
-                    style={{
-                        padding: '10px 18px',
-                        backgroundColor: disabled || !customAmount ? '#cbd5e1' : '#0f172a',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: disabled || !customAmount ? 'not-allowed' : 'pointer',
-                    }}
-                >
-                    Ofertar
-                </button>
+            <form onSubmit={handleCustomSubmit}>
+                <label htmlFor="custom-bid-amount" className="form-label">
+                    Otro importe
+                </label>
+
+                <div className="input-group">
+                    <span className="input-group-text">$</span>
+
+                    <input
+                        id="custom-bid-amount"
+                        type="number"
+                        min={nextMinimumBid}
+                        step="0.01"
+                        required
+                        value={customAmount}
+                        disabled={isDisabled}
+                        className={`form-control ${
+                            validationError ? 'is-invalid' : ''
+                        }`}
+                        aria-describedby="custom-bid-help custom-bid-error"
+                        aria-invalid={Boolean(validationError)}
+                        onChange={(event) => {
+                            setCustomAmount(event.target.value)
+                            setValidationError('')
+                        }}
+                    />
+
+                    <button
+                        type="submit"
+                        className="btn btn-outline-success"
+                        disabled={isDisabled || !customAmount.trim()}
+                    >
+                        Ofertar
+                    </button>
+                </div>
+
+                <div id="custom-bid-help" className="form-text">
+                    Mínimo actual: {priceFormatter.format(nextMinimumBid)}.
+                    Podés ingresar un importe mayor.
+                </div>
+
+                {validationError && (
+                    <div
+                        id="custom-bid-error"
+                        className="text-danger small mt-2"
+                        role="alert"
+                    >
+                        {validationError}
+                    </div>
+                )}
             </form>
-        </div>
-    );
-};
+        </section>
+    )
+}

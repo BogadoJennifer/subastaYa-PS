@@ -12,6 +12,8 @@ public record AuctionDetailsDto(
         BigDecimal highestBid,
         String state,
         LocalDateTime startDate,
-        LocalDateTime endDate
+        LocalDateTime endDate,
+        Long highestBidderId,
+        boolean currentUserHasBid
 ) {
 }

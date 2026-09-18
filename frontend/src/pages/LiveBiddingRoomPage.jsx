@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import Countdown from '../components/Countdown.jsx'
 import BidHistory from "../components/BidHistory.jsx";
+import { BidConsole } from '../components/BidConsole.jsx'
+import BidStatus from "../components/BidStatus.jsx";
 
-function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
+function LiveBiddingRoomPage({ auctionId: propId }) {
     const { auctionId: paramId } = useParams()
+    const [searchParams] = useSearchParams()
+
     const id = propId || paramId
+
+    const demoUserId = searchParams.get('demoUserId')
+
+    const currentUserId =
+        import.meta.env.DEV && demoUserId === '3' ? 3 : 2
 
     const [auction, setAuction] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -49,9 +58,12 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
 
                     try {
                         const [auctionResponse, bidsResponse] = await Promise.all([
-                            fetch(`/api/auctions/${id}/details`, {
-                                signal: controller.signal,
-                            }),
+                            fetch(
+                                `/api/auctions/${id}/details?userId=${encodeURIComponent(currentUserId)}`,
+                                {
+                                    signal: controller.signal,
+                                }
+                            ),
                             fetch(`/api/auctions/${id}/bids`, {
                                 signal: controller.signal,
                             }),
@@ -93,6 +105,8 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                                     ...data,
                                     highestBid: previousAuction.highestBid,
                                     endDate: previousAuction.endDate,
+                                    highestBidderId: previousAuction.highestBidderId,
+                                    currentUserHasBid: previousAuction.currentUserHasBid,
                                 }
                             }
 
@@ -157,7 +171,7 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
             controller.abort()
             void client.deactivate()
         }
-    }, [id])
+    }, [id, currentUserId])
 
     if (loading) return <div className="container py-4">Cargando subasta #{id}...</div>
     if (error || !auction) return <div className="container py-4 text-danger">Error: {error || 'No encontrada'}</div>
@@ -165,7 +179,7 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
     // 2. Valores calculados con datos directos de la BD
     const currentPrice = Number(auction.highestBid ?? auction.basePrice ?? 0)
     const minIncrement = Number(auction.minimumIncrement ?? 0)
-    const nextBid = Number((currentPrice + minIncrement).toFixed(2))
+    //const nextBid = Number((currentPrice + minIncrement).toFixed(2))
 
     const startTimestamp = new Date(auction.startDate).getTime()
     const endTimestamp = new Date(auction.endDate).getTime()
@@ -178,8 +192,19 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
         currentTime < endTimestamp
 
     // 3. Enviar la oferta mínima
-    const handleBid = async () => {
-        if (isSubmitting || !canBid) return
+    const handleBid = async (amount) => {
+        if (isSubmitting || !canBid) return false
+
+        const minimumAmount = Number(
+            (currentPrice + minIncrement).toFixed(2)
+        )
+
+        if (!Number.isFinite(amount) || amount < minimumAmount) {
+            setMessage(
+                `La oferta debe ser de al menos $${minimumAmount}.`
+            )
+            return false
+        }
 
         setIsSubmitting(true)
         setMessage('Enviando oferta...')
@@ -190,7 +215,7 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     bidderId: currentUserId,
-                    amount: nextBid,
+                    amount,
                 }),
             })
 
@@ -201,14 +226,14 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                     result?.message ??
                     `No se pudo registrar la oferta (${response.status})`
                 )
-                return
+                return false
             }
 
             if (result?.amount == null || !result?.endDate) {
                 setMessage(
                     'El servidor respondió sin los datos esperados. Recargá la página para verificar si la oferta se registró.'
                 )
-                return
+                return false
             }
 
             setAuction((previousAuction) => {
@@ -225,6 +250,8 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                     ...previousAuction,
                     highestBid: result.amount,
                     endDate: result.endDate,
+                    highestBidderId: currentUserId,
+                    currentUserHasBid: true,
                 }
             })
 
@@ -240,10 +267,13 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                         : ''
                 }`
             )
+
+            return true
         } catch {
             setMessage(
                 'No se pudo confirmar la respuesta del servidor. Recargá la página para verificar si la oferta se registró.'
             )
+            return false
         } finally {
             setIsSubmitting(false)
         }
@@ -252,6 +282,12 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
     return (
         <div className="container py-4" style={{ maxWidth: '500px' }}>
             <h2>{auction.title}</h2>
+
+            {import.meta.env.DEV && (
+                <div className="alert alert-secondary py-2">
+                    Usuario de prueba: <strong>Postor {currentUserId}</strong>
+                </div>
+            )}
 
             <p
                 className={`small ${
@@ -278,18 +314,18 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                 <div>Incremento mínimo (BD): <strong>+${minIncrement}</strong></div>
             </div>
 
-            <button
-                type="button"
-                onClick={handleBid}
-                disabled={isSubmitting || !canBid}
-                className="btn btn-success btn-lg w-100"
-            >
-                {isSubmitting
-                    ? 'Enviando oferta...'
-                    : canBid
-                        ? `Ofertar mínimo: $${nextBid}`
-                        : 'Ofertas no disponibles'}
-            </button>
+            <BidStatus
+                auction={auction}
+                currentUserId={currentUserId}
+            />
+
+            <BidConsole
+                currentPrice={currentPrice}
+                minIncrement={minIncrement}
+                onBid={handleBid}
+                disabled={!canBid}
+                isSubmitting={isSubmitting}
+            />
 
             {message && <div className="alert alert-info mt-3">{message}</div>}
             <BidHistory

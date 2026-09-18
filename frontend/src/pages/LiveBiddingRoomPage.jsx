@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
+import Countdown from '../components/Countdown.jsx'
 
 function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
     const { auctionId: paramId } = useParams()
@@ -12,7 +13,15 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
     const [message, setMessage] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isConnected, setIsConnected] = useState(false)
+    const [currentTime, setCurrentTime] = useState(() => Date.now())
 
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setCurrentTime(Date.now())
+        }, 1000)
+
+        return () => clearInterval(intervalId)
+    }, [])
     // 1. Cargar la subasta desde el backend
     useEffect(() => {
         if (!id) return
@@ -137,9 +146,19 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
     const minIncrement = Number(auction.minimumIncrement ?? 0)
     const nextBid = Number((currentPrice + minIncrement).toFixed(2))
 
+    const startTimestamp = new Date(auction.startDate).getTime()
+    const endTimestamp = new Date(auction.endDate).getTime()
+
+    const canBid =
+        auction.state === 'ACTIVE' &&
+        Number.isFinite(startTimestamp) &&
+        Number.isFinite(endTimestamp) &&
+        currentTime >= startTimestamp &&
+        currentTime < endTimestamp
+
     // 3. Enviar la oferta mínima
     const handleBid = async () => {
-        if (isSubmitting) return
+        if (isSubmitting || !canBid) return
 
         setIsSubmitting(true)
         setMessage('Enviando oferta...')
@@ -220,9 +239,17 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
                 role="status"
             >
                 {isConnected
-                    ? '● Actualizaciones en vivo conectadas'
+                    ? '● LIVE!'
                     : '● Sin conexión en vivo. Intentando conectar…'}
             </p>
+
+            <div className="mb-3" role="status">
+                <Countdown
+                    state={auction.state}
+                    startDate={auction.startDate}
+                    endDate={auction.endDate}
+                />
+            </div>
 
 
             <div className="mb-3">
@@ -233,12 +260,14 @@ function LiveBiddingRoomPage({ auctionId: propId, currentUserId = 2 }) {
             <button
                 type="button"
                 onClick={handleBid}
-                disabled={isSubmitting || auction.state !== 'ACTIVE'}
+                disabled={isSubmitting || !canBid}
                 className="btn btn-success btn-lg w-100"
             >
                 {isSubmitting
                     ? 'Enviando oferta...'
-                    : `Ofertar mínimo: $${nextBid}`}
+                    : canBid
+                        ? `Ofertar mínimo: $${nextBid}`
+                        : 'Ofertas no disponibles'}
             </button>
 
             {message && <div className="alert alert-info mt-3">{message}</div>}

@@ -19,6 +19,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             String state,
             LocalDateTime dateTime
     );
+    List<Auction> findByVendorId(Long vendorId);
 
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Query("select a from Auction a where a.id = :id")

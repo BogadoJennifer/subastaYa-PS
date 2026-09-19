@@ -16,7 +16,9 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
     const demoUserId = searchParams.get('demoUserId')
 
     const currentUserId =
-        import.meta.env.DEV && demoUserId === '3' ? 3 : 2
+        import.meta.env.DEV && ['1', '2', '3'].includes(demoUserId)
+            ? Number(demoUserId)
+            : 2
 
     const [auction, setAuction] = useState(null)
     const [loading, setLoading] = useState(true)

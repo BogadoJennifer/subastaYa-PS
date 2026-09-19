@@ -30,7 +30,7 @@ public class AuctionPublicationService {
     }
     public Auction createAuction(CreateAuctionRequestDto request) {
         LocalDateTime now = LocalDateTime.now();
-        if (!request.getStartDate().isAfter(now)) {
+        if (!request.getStartDate().isAfter(request.getStartDate())) {
             throw new IllegalArgumentException(
                     "La fecha de finalización debe ser posterior a la fecha de inicio"
             );

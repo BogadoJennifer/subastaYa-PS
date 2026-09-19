@@ -11,6 +11,7 @@ import unaj.subastaya.dto.AuctionDetailsDto;
 import jakarta.validation.Valid;
 import unaj.subastaya.dto.CreateAuctionRequestDto;
 import unaj.subastaya.service.AuctionPublicationService;
+import unaj.subastaya.dto.CreateAuctionResponseDto;
 
 import java.util.List;
 
@@ -47,9 +48,24 @@ public class AuctionController {
     }
 
     @PostMapping
-    public ResponseEntity<Auction> createAuction(@Valid @RequestBody CreateAuctionRequestDto request) {
+    public ResponseEntity<CreateAuctionResponseDto> createAuction(@Valid @RequestBody CreateAuctionRequestDto request) {
         Auction savedAuction = auctionPublicationService.createAuction(request);
-        return ResponseEntity.status(201).body(savedAuction);
+
+        CreateAuctionResponseDto response = new CreateAuctionResponseDto(
+                savedAuction.getId(),
+                savedAuction.getTitle(),
+                savedAuction.getDescription(),
+                savedAuction.getImageUrl(),
+                savedAuction.getCategories().getId(),
+                savedAuction.getCategories().getName(),
+                savedAuction.getBasePrice(),
+                savedAuction.getMinimumIncrement(),
+                savedAuction.getStartDate(),
+                savedAuction.getEndDate(),
+                savedAuction.getState()
+        );
+
+        return ResponseEntity.status(201).body(response);
     }
     @GetMapping("/catalog")
     public List<AuctionCatalogDto> getCatalog() {

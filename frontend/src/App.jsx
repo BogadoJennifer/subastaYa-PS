@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom'
 import AuctionCatalog from './pages/AuctionCatalog.jsx'
 import LiveBiddingRoomPage from './pages/LiveBiddingRoomPage.jsx'
 import CreateAuctionPage from './pages/CreateAuctionPage.jsx'
+import WalletPage from "./pages/WalletPage.jsx";
 
 function App() {
     return (
@@ -25,6 +26,10 @@ function App() {
                 <Route
                     path="/auctions/new"
                     element={<CreateAuctionPage/>}
+
+                <Route
+                    path="/wallet"
+                    element={<WalletPage />}
                 />
             </Routes>
 

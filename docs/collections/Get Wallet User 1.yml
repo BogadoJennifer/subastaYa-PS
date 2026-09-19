@@ -1,0 +1,20 @@
+info:
+  name: Get Wallet User 1
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8080/api/wallets/100/deposits?amount=10
+  params:
+    - name: amount
+      value: "10"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

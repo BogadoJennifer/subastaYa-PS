@@ -8,6 +8,7 @@ import unaj.subastaya.dto.CreateAuctionRequestDto;
 import unaj.subastaya.model.Auction;
 import unaj.subastaya.model.Categories;
 import unaj.subastaya.model.User;
+import unaj.subastaya.exception.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 
@@ -40,11 +41,11 @@ public class AuctionPublicationService {
             );
         }
         Categories category = categoriesRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "La categoría indicada no existe"
                 ));
         User vendor = userRepository.findByEmail("vendor@test.com")
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "El vendedor no existe"
                 ));
 

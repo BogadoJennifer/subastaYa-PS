@@ -10,6 +10,7 @@ import {
     Spinner,
     Table
 } from 'react-bootstrap'
+import WalletTransactions from '../components/WalletTransactions.jsx'
 
 function WalletPage() {
 
@@ -274,53 +275,15 @@ function WalletPage() {
 
                 <Col lg={7}>
                     <Card>
-                        <Card.Body>
+                            <Card.Body>
+                                <Card.Title className="mb-3">
+                                    Movimientos
+                                </Card.Title>
 
-                            <Card.Title className="mb-3">
-                                Movimientos
-                            </Card.Title>
-
-                            {transactions.length === 0 ? (
-                                <p className="text-muted mb-0">
-                                    Todavía no hay movimientos.
-                                </p>
-                            ) : (
-                                <Table responsive hover>
-                                    <thead>
-                                    <tr>
-                                        <th>Tipo</th>
-                                        <th>Monto</th>
-                                        <th>Fecha</th>
-                                    </tr>
-                                    </thead>
-
-                                    <tbody>
-                                    {transactions.map(
-                                        (transaction) => (
-                                            <tr key={transaction.id}>
-                                                <td>
-                                                    {transaction.type}
-                                                </td>
-
-                                                <td>
-                                                    {formatMoney(
-                                                        transaction.amount
-                                                    )}
-                                                </td>
-
-                                                <td>
-                                                    {formatDate(
-                                                        transaction.date
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )
-                                    )}
-                                    </tbody>
-                                </Table>
-                            )}
-
-                        </Card.Body>
+                                <WalletTransactions
+                                    transactions={transactions}
+                                />
+                            </Card.Body>
                     </Card>
                 </Col>
 

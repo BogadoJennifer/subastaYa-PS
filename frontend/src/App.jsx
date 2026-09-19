@@ -3,6 +3,7 @@ import SiteFooter from './components/SiteFooter.jsx'
 import { Routes, Route } from 'react-router-dom'
 import AuctionCatalog from './pages/AuctionCatalog.jsx'
 import LiveBiddingRoomPage from './pages/LiveBiddingRoomPage.jsx'
+import WalletPage from "./pages/WalletPage.jsx";
 
 function App() {
     return (
@@ -18,6 +19,11 @@ function App() {
                 <Route
                     path="/auctions/:auctionId/live"
                     element={<LiveBiddingRoomPage />}
+                />
+
+                <Route
+                    path="/wallet"
+                    element={<WalletPage />}
                 />
             </Routes>
 

@@ -8,9 +8,13 @@ import unaj.subastaya.dto.AuctionCatalogDto;
 import unaj.subastaya.model.Bid;
 import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.dto.AuctionDetailsDto;
+import jakarta.validation.Valid;
+import unaj.subastaya.dto.CreateAuctionRequestDto;
+import unaj.subastaya.service.AuctionPublicationService;
+import unaj.subastaya.dto.CreateAuctionResponseDto;
 
 import java.util.List;
-import java.math.BigDecimal;
+
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -19,13 +23,16 @@ public class AuctionController {
 
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
+    private final AuctionPublicationService auctionPublicationService;
 
     public AuctionController(
             AuctionRepository auctionRepository,
-            BidRepository bidRepository
+            BidRepository bidRepository,
+            AuctionPublicationService auctionPublicationService
     ) {
         this.auctionRepository = auctionRepository;
         this.bidRepository = bidRepository;
+        this.auctionPublicationService = auctionPublicationService;
     }
 
     @GetMapping
@@ -41,9 +48,24 @@ public class AuctionController {
     }
 
     @PostMapping
-    public ResponseEntity<Auction> createAuction(@RequestBody Auction auction) {
-        Auction savedAuction = auctionRepository.save(auction);
-        return ResponseEntity.status(201).body(savedAuction);
+    public ResponseEntity<CreateAuctionResponseDto> createAuction(@Valid @RequestBody CreateAuctionRequestDto request) {
+        Auction savedAuction = auctionPublicationService.createAuction(request);
+
+        CreateAuctionResponseDto response = new CreateAuctionResponseDto(
+                savedAuction.getId(),
+                savedAuction.getTitle(),
+                savedAuction.getDescription(),
+                savedAuction.getImageUrl(),
+                savedAuction.getCategories().getId(),
+                savedAuction.getCategories().getName(),
+                savedAuction.getBasePrice(),
+                savedAuction.getMinimumIncrement(),
+                savedAuction.getStartDate(),
+                savedAuction.getEndDate(),
+                savedAuction.getState()
+        );
+
+        return ResponseEntity.status(201).body(response);
     }
     @GetMapping("/catalog")
     public List<AuctionCatalogDto> getCatalog() {

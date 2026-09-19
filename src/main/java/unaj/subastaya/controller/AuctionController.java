@@ -8,6 +8,9 @@ import unaj.subastaya.dto.AuctionCatalogDto;
 import unaj.subastaya.model.Bid;
 import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.dto.AuctionDetailsDto;
+import jakarta.validation.Valid;
+import unaj.subastaya.dto.CreateAuctionRequestDto;
+import unaj.subastaya.service.AuctionPublicationService;
 
 import java.util.List;
 import java.math.BigDecimal;
@@ -19,13 +22,16 @@ public class AuctionController {
 
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
+    private final AuctionPublicationService auctionPublicationService;
 
     public AuctionController(
             AuctionRepository auctionRepository,
-            BidRepository bidRepository
+            BidRepository bidRepository,
+            AuctionPublicationService auctionPublicationService
     ) {
         this.auctionRepository = auctionRepository;
         this.bidRepository = bidRepository;
+        this.auctionPublicationService = auctionPublicationService;
     }
 
     @GetMapping
@@ -41,8 +47,8 @@ public class AuctionController {
     }
 
     @PostMapping
-    public ResponseEntity<Auction> createAuction(@RequestBody Auction auction) {
-        Auction savedAuction = auctionRepository.save(auction);
+    public ResponseEntity<Auction> createAuction(@Valid @RequestBody CreateAuctionRequestDto request) {
+        Auction savedAuction = auctionPublicationService.createAuction(request);
         return ResponseEntity.status(201).body(savedAuction);
     }
     @GetMapping("/catalog")

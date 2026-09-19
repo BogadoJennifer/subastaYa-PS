@@ -11,7 +11,7 @@ export default function useAuctions() {
 
         async function loadAuctions() {
             try {
-                const response = await fetch('api/auctions/catalog', {
+                const response = await fetch('/api/auctions/catalog', {
                     signal: controller.signal,
                     cache: 'no-store',
                 })

@@ -78,4 +78,93 @@ class EscrowServiceTest {
         verify(ledgerTransactionRepository)
                 .save(any(LedgerTransaction.class));
     }
+
+    @Test
+    void ReleasePreviousOfferAndRetainNewOne() {
+
+        BidRepository bidRepository = mock(BidRepository.class);
+        WalletRepository walletRepository = mock(WalletRepository.class);
+        LedgerTransactionRepository ledgerTransactionRepository =
+                mock(LedgerTransactionRepository.class);
+
+        EscrowService escrowService = new EscrowService(
+                bidRepository,
+                walletRepository,
+                ledgerTransactionRepository
+        );
+
+        User previousBidder = new User();
+        previousBidder.setId(1L);
+        previousBidder.setName("Usuario A");
+
+        User newBidder = new User();
+        newBidder.setId(2L);
+        newBidder.setName("Usuario B");
+
+        Auction auction = new Auction();
+        auction.setId(100L);
+
+        Wallet previousWallet = new Wallet();
+        previousWallet.setUser(previousBidder);
+        previousWallet.setTotalBalance(new BigDecimal("50000"));
+        previousWallet.setRetainedBalance(new BigDecimal("10000"));
+        previousWallet.setAvailableBalance(new BigDecimal("40000"));
+
+        Wallet newWallet = new Wallet();
+        newWallet.setUser(newBidder);
+        newWallet.setTotalBalance(new BigDecimal("50000"));
+        newWallet.setRetainedBalance(BigDecimal.ZERO);
+        newWallet.setAvailableBalance(new BigDecimal("50000"));
+
+        Bid previousBid = new Bid();
+        previousBid.setId(1L);
+        previousBid.setAuction(auction);
+        previousBid.setBidder(previousBidder);
+        previousBid.setAmount(new BigDecimal("10000"));
+
+        when(bidRepository.findHighestBid(100L))
+                .thenReturn(Optional.of(previousBid));
+
+        when(walletRepository.findByUser_Id(1L))
+                .thenReturn(Optional.of(previousWallet));
+
+        when(walletRepository.findByUser_Id(2L))
+                .thenReturn(Optional.of(newWallet));
+
+        escrowService.processEscrow(
+                auction,
+                newBidder,
+                new BigDecimal("15000")
+        );
+
+        // Wallet del usuario anterior
+        assertEquals(
+                new BigDecimal("0"),
+                previousWallet.getRetainedBalance()
+        );
+
+        assertEquals(
+                new BigDecimal("50000"),
+                previousWallet.getAvailableBalance()
+        );
+
+        // Wallet del nuevo usuario
+        assertEquals(
+                new BigDecimal("15000"),
+                newWallet.getRetainedBalance()
+        );
+
+        assertEquals(
+                new BigDecimal("35000"),
+                newWallet.getAvailableBalance()
+        );
+
+        // Se guardan ambas wallets
+        verify(walletRepository, times(2))
+                .save(any(Wallet.class));
+
+        // RELEASE + HOLD
+        verify(ledgerTransactionRepository, times(2))
+                .save(any(LedgerTransaction.class));
+    }
 }

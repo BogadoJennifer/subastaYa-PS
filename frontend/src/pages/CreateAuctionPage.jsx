@@ -7,6 +7,7 @@
 // - Respuesta de éxito o error.
 
 import { useEffect, useState } from 'react'
+import { Form, Button, Alert, Container, Card, Row, Col } from 'react-bootstrap'
 
 function CreateAuctionPage() {
     const [title, setTitle] = useState('')
@@ -20,6 +21,7 @@ function CreateAuctionPage() {
     const [categories, setCategories] = useState([])
     const [errors, setErrors] = useState({})
     const [message, setMessage] = useState('')
+
 
     useEffect(() => {
         fetch('/api/categories')
@@ -116,51 +118,74 @@ function CreateAuctionPage() {
         }
     }
     return (
-        <div>
-            <h1>Publicar subasta</h1>
+        <Container className="py-4">
+
+            <h1 classname="mb-4">Publicar subasta</h1>
 
             {message && (
-                <div>{message}</div>
+                <Alert
+                    variant={message === 'Subasta publicada correctamente' ? 'success' : 'danger'}
+                    dismissible
+                    onClose={() => setMessage('')}
+                >
+                    {message}
+                </Alert>
             )}
 
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Título</label>
-                    <input
+            <Card>
+                <Card.Body>
+
+            <Form onSubmit={handleSubmit}>
+
+                <Form.Group className="mb-3">
+                    <Form.Label>Título</Form.Label>
+                    <Form.Control
                         type="text"
                         value={title}
                         onChange={(event) => setTitle(event.target.value)}
                     />
 
                     {errors.title && (
-                        <div>{errors.title}</div>
+                        <div className="text-danger mt-1">
+                            {errors.title}
+                        </div>
                     )}
-                </div>
+                </Form.Group>
 
-                <div>
-                    <label>Descripción</label>
-                    <textarea
+                <Form.Group className="mb-3">
+                    <Form.Label>Descripción</Form.Label>
+                    <Form.Control
+                        as="textarea"
+                        rows={4}
                         value={description}
                         onChange={(event) => setDescription(event.target.value)}
                     />
-                </div>
-                {errors.description && (
-                    <div>{errors.description}</div>
-                )}
-                <div>
-                    <label>URL de la imagen</label>
-                    <input
+
+                    {errors.description && (
+                        <div className="text-danger mt-1">
+                            {errors.description}
+                        </div>
+                    )}
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                    <Form.Label>URL de la imagen</Form.Label>
+                    <Form.Control
                         type="text"
                         value={imageUrl}
                         onChange={(event) => setImageUrl(event.target.value)}
                     />
-                </div>
-                {errors.imageUrl && (
-                    <div>{errors.imageUrl}</div>
-                )}
-                <div>
-                    <label>Categoría</label>
-                    <select
+
+                    {errors.imageUrl && (
+                        <div className="text-danger mt-1">
+                            {errors.imageUrl}
+                        </div>
+                    )}
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                    <Form.Label>Categoría</Form.Label>
+                    <Form.Select
                         value={categoryId}
                         onChange={(event) => setCategoryId(event.target.value)}
                     >
@@ -171,61 +196,101 @@ function CreateAuctionPage() {
                                 {category.name}
                             </option>
                         ))}
-                    </select>
-                    {errors.categoryId && (
-                        <div>{errors.categoryId}</div>
-                    )}
-                </div>
+                    </Form.Select>
 
-                <div>
-                    <label>Precio inicial</label>
-                    <input
-                        type="number"
-                        value={basePrice}
-                        onChange={(event) => setBasePrice(event.target.value)}
-                    />
-                </div>
-                {errors.basePrice && (
-                    <div>{errors.basePrice}</div>
-                )}
-                <div>
-                    <label>Incremento mínimo</label>
-                    <input
-                        type="number"
-                        value={minimumIncrement}
-                        onChange={(event) => setMinimumIncrement(event.target.value)}
-                    />
-                </div>
-                {errors.minimumIncrement && (
-                    <div>{errors.minimumIncrement}</div>
-                )}
-                <div>
-                    <label>Fecha y hora de inicio</label>
-                    <input
-                        type="datetime-local"
-                        value={startDate}
-                        onChange={(event) => setStartDate(event.target.value)}
-                    />
-                </div>
-                {errors.startDate && (
-                    <div>{errors.startDate}</div>
-                )}
-                <div>
-                    <label>Fecha y hora de finalización</label>
-                    <input
-                        type="datetime-local"
-                        value={endDate}
-                        onChange={(event) => setEndDate(event.target.value)}
-                    />
-                </div>
-                {errors.endDate && (
-                    <div>{errors.endDate}</div>
-                )}
-                    <button type="submit">
-                        Publicar subasta
-                    </button>
-            </form>
-        </div>
+                    {errors.categoryId && (
+                        <div className="text-danger mt-1">
+                            {errors.categoryId}
+                        </div>
+                    )}
+                </Form.Group>
+                <Row>
+                    <Col md={6}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Precio inicial</Form.Label>
+                            <Form.Control
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={basePrice}
+                                onChange={(event) => setBasePrice(event.target.value)}
+                                isInvalid={!!errors.basePrice}
+                            />
+
+                            {errors.basePrice && (
+                                <div className="text-danger mt-1">
+                                    {errors.basePrice}
+                                </div>
+                            )}
+                        </Form.Group>
+                    </Col>
+
+                    <Col md={6}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Incremento mínimo</Form.Label>
+                            <Form.Control
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={minimumIncrement}
+                                onChange={(event) => setMinimumIncrement(event.target.value)}
+                                isInvalid={!!errors.minimumIncrement}
+                            />
+
+                            {errors.minimumIncrement && (
+                                <div className="text-danger mt-1">
+                                    {errors.minimumIncrement}
+                                </div>
+                            )}
+                        </Form.Group>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col md={6}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Fecha y hora de inicio</Form.Label>
+                            <Form.Control
+                                type="datetime-local"
+                                value={startDate}
+                                onChange={(event) => setStartDate(event.target.value)}
+                                isInvalid={!!errors.startDate}
+                            />
+
+                            {errors.startDate && (
+                                <div className="text-danger mt-1">
+                                    {errors.startDate}
+                                </div>
+                            )}
+                        </Form.Group>
+                    </Col>
+
+                    <Col md={6}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Fecha y hora de finalización</Form.Label>
+                            <Form.Control
+                                type="datetime-local"
+                                value={endDate}
+                                onChange={(event) => setEndDate(event.target.value)}
+                                isInvalid={!!errors.endDate}
+                            />
+
+                            {errors.endDate && (
+                                <div className="text-danger mt-1">
+                                    {errors.endDate}
+                                </div>
+                            )}
+                        </Form.Group>
+                    </Col>
+                </Row>
+                <Button variant="primary" className="mt-2" type="submit">
+                    Publicar subasta
+                </Button>
+            </Form>
+
+                </Card.Body>
+            </Card>
+
+        </Container>
     )
 }
 

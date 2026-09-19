@@ -29,8 +29,10 @@ public class AuctionPublicationService {
         this.userRepository = userRepository;
     }
     public Auction createAuction(CreateAuctionRequestDto request) {
+
         LocalDateTime now = LocalDateTime.now();
-        if (!request.getStartDate().isAfter(request.getStartDate())) {
+
+        if (!request.getEndDate().isAfter(request.getStartDate())) {
             throw new IllegalArgumentException(
                     "La fecha de finalización debe ser posterior a la fecha de inicio"
             );

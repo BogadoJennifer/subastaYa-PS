@@ -53,6 +53,13 @@ function AuctionCatalog() {
                 >
                     Publicar subasta
                 </Button>
+                <Button onClick={() => navigate('/wallet')}>
+                    Mi billetera
+                </Button>
+                <Button onClick={() => navigate('/users/1/activities')}>
+                    Mis actividades
+                </Button>
+
             </div>
 
             <div className="catalog-layout">

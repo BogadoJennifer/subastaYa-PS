@@ -5,6 +5,7 @@ import AuctionCatalog from './pages/AuctionCatalog.jsx'
 import LiveBiddingRoomPage from './pages/LiveBiddingRoomPage.jsx'
 import CreateAuctionPage from './pages/CreateAuctionPage.jsx'
 import WalletPage from "./pages/WalletPage.jsx";
+import UserActivitiesPage from './pages/UserActivitiesPage';
 
 function App() {
     return (
@@ -26,7 +27,10 @@ function App() {
                 <Route
                     path="/auctions/new"
                     element={<CreateAuctionPage/>}
+                />
 
+                <Route path="/users/:userId/activities"
+                       element={<UserActivitiesPage />} />
                 <Route
                     path="/wallet"
                     element={<WalletPage />}

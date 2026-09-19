@@ -66,45 +66,18 @@ public class WalletController {
         return ResponseEntity.ok(balances);
     }
 
-    // Endpoint para realizar una carga de saldo simulada
+
     @PostMapping("/{id}/deposits")
     public ResponseEntity<Wallet> depositMoney(
             @PathVariable Long id,
             @RequestParam BigDecimal amount) {
 
-        Wallet wallet = walletRepository.findById(id)
-                .orElse(null);
-
-        if (wallet == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        wallet.setTotalBalance(
-                wallet.getTotalBalance().add(amount)
-        );
-
-        wallet.setAvailableBalance(
-                wallet.getTotalBalance()
-                        .subtract(wallet.getRetainedBalance())
-        );
-
-        Wallet updatedWallet = walletRepository.save(wallet);
-
-        LedgerTransaction transaction = new LedgerTransaction();
-
-        transaction.setWallet(updatedWallet);
-        transaction.setType("DEPOSIT");
-        transaction.setAmount(amount);
-        transaction.setDate(LocalDateTime.now());
-
-        ledgerTransactionRepository.save(transaction);
+        Wallet updatedWallet = walletService.depositMoney(id, amount);
 
         return ResponseEntity.status(201).body(updatedWallet);
     }
+
+
     @GetMapping("/{id}/transactions")
     public ResponseEntity<?> getWalletTransactions(
             @PathVariable Long id) {

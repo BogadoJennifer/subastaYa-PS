@@ -123,6 +123,7 @@ public class AuctionClosingWorker {
         }
         winnerWallet.setRetainedBalance(winnerWallet.getRetainedBalance().subtract(winningAmount));
         winnerWallet.setTotalBalance(winnerWallet.getTotalBalance().subtract(winningAmount));
+        winnerWallet.setAvailableBalance(winnerWallet.getTotalBalance().subtract(winnerWallet.getRetainedBalance()));
         walletRepository.save(winnerWallet);
 
         //Save the debit in ledgerTransaction

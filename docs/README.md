@@ -65,7 +65,7 @@ Contiene las decisiones técnicas importantes tomadas durante el desarrollo del 
 
 ### Bruno
 
-`docs/bruno/`
+`docs/collections/`
 
 Contiene las colecciones y configuraciones de Bruno utilizadas para probar la API.
 

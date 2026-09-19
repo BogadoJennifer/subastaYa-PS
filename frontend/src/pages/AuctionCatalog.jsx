@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
     Alert,
+    Button,
     Col,
     Container,
     Form,
@@ -20,6 +22,7 @@ import {
 
 function AuctionCatalog() {
     const { auctions, isLoading, error } = useAuctions()
+    const navigate = useNavigate()
     const [filters, setFilters] = useState({ ...INITIAL_FILTERS })
 
     const categories = getCategories(auctions)
@@ -40,10 +43,17 @@ function AuctionCatalog() {
     function resetFilters() {
         setFilters({ ...INITIAL_FILTERS })
     }
-
     return (
         <Container as="main" id="catalog" className="catalog-section">
-            <h2 className="h4 fw-bold mb-4">Explorá las subastas</h2>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2 className="h4 fw-bold mb-0">Explorá las subastas</h2>
+                <Button
+                    variant="primary"
+                    onClick={() => navigate('/auctions/new')}
+                >
+                    Publicar subasta
+                </Button>
+            </div>
 
             <div className="catalog-layout">
                 <AuctionFilters

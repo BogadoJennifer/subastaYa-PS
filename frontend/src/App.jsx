@@ -15,7 +15,9 @@ function App() {
                     path="/pages/AuctionCatalog"
                     element={<AuctionCatalog />}
                 />
-
+                <Route
+                    path="/" element={<AuctionCatalog />}
+                />
                 <Route
                     path="/auctions/:auctionId/live"
                     element={<LiveBiddingRoomPage />}

@@ -35,6 +35,11 @@ function App() {
                     path="/wallet"
                     element={<WalletPage />}
                 />
+
+                <Route
+                    path="/wallet/:userId"
+                    element={<WalletPage />}
+                />
             </Routes>
 
             <SiteFooter />

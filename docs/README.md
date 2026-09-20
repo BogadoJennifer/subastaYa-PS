@@ -19,9 +19,13 @@ El objetivo es desarrollar una aplicación que permita un entorno basado en dos 
 
 * Java
 * Spring Boot
+* Hibernate
+* React
 * Gradle
+* Spring WebSocket
 * IntelliJ IDEA
 * PostgreSQL
+* flyway
 * Bruno
 
 ## Arquitectura
@@ -42,7 +46,7 @@ docs/
 ├── architecture.md
 ├── api-spec.md
 ├── decisions/
-└── bruno/
+└── collections/
 ```
 
 ### Arquitectura
@@ -62,6 +66,7 @@ Contiene la especificación de los endpoints de la API, sus parámetros, respues
 `docs/decisions/`
 
 Contiene las decisiones técnicas importantes tomadas durante el desarrollo del proyecto y los motivos que llevaron a cada decisión.
+Basandonos en el patrón de RFC (Request for Comments) para documentar las decisiones técnicas.
 
 ### Bruno
 

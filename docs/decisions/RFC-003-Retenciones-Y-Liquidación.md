@@ -4,7 +4,7 @@
 - **Fecha:** 10/09/2026
 - **Ámbito:** Gestión de fondos durante las ofertas y finalización de subastas.
 
-##  Contexto
+##  Problema
 
 Una oferta válida puede requerir que parte de los fondos disponibles del oferente quede temporalmente bloqueada.
 

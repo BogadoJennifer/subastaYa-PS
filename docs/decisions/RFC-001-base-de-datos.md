@@ -19,5 +19,5 @@ Utilizar PostgreSQL.
 2. **Tipado y Precisión Monetaria:** Soporte nativo para el tipo `NUMERIC` / `DECIMAL`, mapeado con `java.math.BigDecimal` para prevenir errores de redondeo de punto flotante.
 3. **Bloqueo a Nivel de Fila:** Permite el uso de cláusulas `SELECT ... FOR UPDATE` para sincronizar operaciones sobre una misma billetera
 
-# Consecuencias:
+## Consecuencias:
 Dependencia de PostgreSQL, necesidad de migraciones reproducibles y alineación entre entidades y DDL.

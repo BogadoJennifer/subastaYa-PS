@@ -25,6 +25,7 @@ public class BiddingService {
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
     private final AuditLogRepository auditLogRepository;
 
+
     public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository,
                           BidRepository bidRepository, EscrowService escrowService, UserRepository userRepository,
                           CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository, org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate,

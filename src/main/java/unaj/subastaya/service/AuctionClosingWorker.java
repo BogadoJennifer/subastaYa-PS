@@ -16,6 +16,8 @@ import unaj.subastaya.repository.AuctionRepository;
 import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.repository.LedgerTransactionRepository;
 import unaj.subastaya.repository.WalletRepository;
+import unaj.subastaya.model.AuditLog;
+import unaj.subastaya.repository.AuditLogRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,16 +34,21 @@ public class AuctionClosingWorker {
     private final BidRepository bidRepository;
     private final WalletRepository walletRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
+    private final AuditLogRepository auditLogRepository;
     private final SimpMessagingTemplate messagingTemplate;
+
     public AuctionClosingWorker(AuctionRepository auctionRepository,
                                 BidRepository bidRepository,
                                 WalletRepository walletRepository,
                                 LedgerTransactionRepository ledgerTransactionRepository,
+                                AuditLogRepository auditLogRepository,
                                 SimpMessagingTemplate messagingTemplate) {
+
         this.auctionRepository = auctionRepository;
         this.bidRepository = bidRepository;
         this.walletRepository = walletRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+        this.auditLogRepository = auditLogRepository;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -98,8 +105,16 @@ public class AuctionClosingWorker {
 
         //if no found bids, set the state to UNSOLD
         if (winningBidOpt.isEmpty()) {
+            String previousState = auction.getState();
+
             auction.setState("UNSOLD");
             auctionRepository.save(auction);
+
+            saveStateChangeAudit(
+                    auction,
+                    previousState,
+                    "UNSOLD"
+            );
 
             notifyAuctionClosed(auction);
 
@@ -157,12 +172,43 @@ public class AuctionClosingWorker {
 
         // set the state to FINISHED
         auction.setBuyer(winningBid.getBidder());
+
+        String previousState = auction.getState();
+
         auction.setState("FINISHED");
         auctionRepository.save(auction);
+
+        saveStateChangeAudit(
+                auction,
+                previousState,
+                "FINISHED"
+        );
+
         notifyAuctionClosed(auction);
 
         log.info("Auditoría Venta: Subasta id={} FINISHED. Ganador id={}, Vendedor id={}, Monto={}",
                 auction.getId(), winnerId, vendorId, winningAmount);
 
+    }
+
+    private void saveStateChangeAudit(
+            Auction auction,
+            String previousState,
+            String newState) {
+
+        AuditLog auditLog = new AuditLog();
+
+        auditLog.setEntity("AUCTION");
+        auditLog.setEntityId(auction.getId());
+        auditLog.setAction("STATE_CHANGE");
+        auditLog.setUserId(null);
+        auditLog.setDate(LocalDateTime.now());
+        auditLog.setDetailJson(
+                "{\"previousState\":\"" + previousState
+                        + "\",\"newState\":\"" + newState
+                        + "\"}"
+        );
+
+        auditLogRepository.save(auditLog);
     }
 }

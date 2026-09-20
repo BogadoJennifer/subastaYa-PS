@@ -1,0 +1,23 @@
+info:
+  name: Optimistic-Locking-User2
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:8080/api/auctions/11/bids
+  body:
+    type: json
+    data: |-
+      {
+        "bidderId": 3,
+        "amount": 11000
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

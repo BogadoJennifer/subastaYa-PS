@@ -11,12 +11,14 @@ import {
     Table
 } from 'react-bootstrap'
 import WalletTransactions from '../components/WalletTransactions.jsx'
+import { useParams } from 'react-router-dom'
 
 function WalletPage() {
+    const { userId } = useParams()
 
     // Temporalmente usamos el usuario 1.
     // Después lo reemplazamos por el usuario autenticado.
-    const userId = 1
+    //const userId = 1
 
     const [wallet, setWallet] = useState(null)
     const [transactions, setTransactions] = useState([])

@@ -1,17 +1,18 @@
-Prueba manual de ofertas concurrentes con bloqueo optimista
+# Prueba manual de ofertas concurrentes con bloqueo optimista (Optimistic Locking)
 
-Identificación
+## Identificación
 - Código: CONC-01.
-- Fecha: fecha de ejecución.
-- Responsables: integrantes que realizaron la prueba.
-- Versión: rama y hash del commit.
+- Fecha: 19/09/2026
+- Responsables: 
+  -  Jennifer Bogado
+  -  Braian Martín Leuno
 - Herramientas: IntelliJ Debug, Bruno y pgAdmin.
-- Resultado: aprobado, fallido o pendiente de verificar.
+- Resultado: aprobado.
 
-Objetivo:
+## Objetivo:
 Verificar que dos solicitudes que leen la misma versión de una subasta no confirmen ambas sus cambios y que la operación rechazada no deje ofertas, retenciones ni movimientos contables persistidos.
 
-Preparación:
+## Preparación:
 | Dato | Valor |
 |---|---|
 | ID de subasta | 11 |
@@ -26,7 +27,7 @@ Preparación:
 
 Aclaracion: los compradores eran distintos del vendedor y la subasta permaneció abierta durante la prueba.
 
-3. Procedimiento realizado:
+## 1. Procedimiento realizado:
 
    - Ejecutamos el backend en modo Debug.
    - Colocamos un breakpoint antes de escrowService.processEscrow, después de validar el importe mínimo.
@@ -40,7 +41,7 @@ Aclaracion: los compradores eran distintos del vendedor y la subasta permaneció
 
 El debugger permitió coordinar dos transacciones sobre una misma versión. No fue necesario que las solicitudes llegaran exactamente al mismo tiempo.
 
-4. Resultados esperados y observados
+## 2. Resultados esperados y observados
 
 | Comprobación | Esperado | Observado |
 |---|---|-----------|
@@ -54,7 +55,19 @@ El debugger permitió coordinar dos transacciones sobre una misma versión. No f
 | Movimientos de la solicitud rechazada | Ninguno persistido | Si        |
 | Versión de la subasta | Avanza | Si        |
 
-5. Conclusiones:
+### Evidencia de 1er petición (201 Created)
+![image.webp](../../../AppData/Local/Temp/image.webp)
+
+### Evidencia de 2da petición (409 Conflict)
+![2da peticion.webp](../../../OneDrive/Desktop/2da%20peticion.webp)
+
+
+### Evidencia de puja de la 1er petición (201 Created)
+![SQL Evidence Optimistic-Locking.webp](../../../OneDrive/Desktop/SQL%20Evidence%20Optimistic-Locking.webp)
+
+## 3. Conclusiones:
 
 La prueba CONC-01 fue satisfactoria: dos transacciones leyeron la misma versión de una subasta, solo una confirmó su oferta y la otra recibió HTTP 409. Las consultas posteriores confirmaron que la operación rechazada no dejó cambios monetarios ni ofertas persistidas.
 Esta prueba verifica un escenario controlado de concurrencia. No constituye una prueba de carga ni demuestra por sí sola el comportamiento ante todas las combinaciones de pujas, billeteras compartidas y cierre automático.
+
+**nota**: se pueden observar las 2 solicitudes de Bruno en `/docs/collections`.

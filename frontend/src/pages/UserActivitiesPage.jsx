@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Container, Row, Col, Card, Badge } from 'react-bootstrap';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Container, Row, Col, Card, Badge, Button, Collapse } from 'react-bootstrap';
 
 function UserActivitiesPage() {
     const { userId } = useParams();
@@ -8,6 +8,28 @@ function UserActivitiesPage() {
     const [activities, setActivities] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const [showPublications, setShowPublications] = useState(false);
+    const [showParticipations, setShowParticipations] = useState(false);
+
+    const navigate = useNavigate();
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+
+        if (Number.isNaN(date.getTime())) {
+            return dateString;
+        }
+
+        return new Intl.DateTimeFormat('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).format(date) + ' hs';
+    }
 
     function getStateLabel(state) {
         switch (state) {
@@ -139,7 +161,6 @@ if (error) {
 return (
     <Container className="py-4">
 
-        {/* Encabezado */}
         <div className="mb-4">
             <h1 className="fw-bold mb-1">
                 Mis Actividades
@@ -150,7 +171,6 @@ return (
             </p>
         </div>
 
-        {/* Resumen */}
         <Card className="shadow-sm border-0 mb-4">
             <Card.Body>
                 <Row className="align-items-center">
@@ -179,7 +199,8 @@ return (
             </Card.Body>
         </Card>
 
-        {/* Mis publicaciones */}
+        {/* MIS PUBLICACIONES */}
+
         <div className="mb-5">
 
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -193,97 +214,123 @@ return (
                     </p>
                 </div>
 
-                <Badge bg="primary" pill>
-                    {activities.publications.length}
-                </Badge>
+                <div className="d-flex align-items-center gap-2">
+                    <Badge bg="primary" pill>
+                        {activities.publications.length}
+                    </Badge>
+
+                    <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => setShowPublications(!showPublications)}
+                        aria-expanded={showPublications}
+                    >
+                        {showPublications
+                            ? 'Ocultar publicaciones'
+                            : 'Mostrar publicaciones'}
+                    </Button>
+                </div>
             </div>
 
-            {activities.publications.length === 0 ? (
-                <Card className="border-0 shadow-sm">
-                    <Card.Body className="text-center py-4">
-                        <p className="text-muted mb-0">
-                            No tenés publicaciones.
-                        </p>
-                    </Card.Body>
-                </Card>
-            ) : (
-                <Row>
-                    {activities.publications.map(publication => (
-                        <Col
-                            key={publication.auctionId}
-                            xs={12}
-                            md={6}
-                            lg={4}
-                            className="mb-4"
-                        >
-                            <Card className="h-100 shadow-sm border-0">
+            <Collapse in={showPublications}>
+                <div>
 
-                                <Card.Body>
+                    {activities.publications.length === 0 ? (
+                        <Card className="border-0 shadow-sm">
+                            <Card.Body className="text-center py-4">
+                                <p className="text-muted mb-0">
+                                    No tenés publicaciones.
+                                </p>
+                            </Card.Body>
+                        </Card>
+                    ) : (
+                        <Row>
+                            {activities.publications.map(publication => (
+                                <Col
+                                    key={publication.auctionId}
+                                    xs={12}
+                                    md={6}
+                                    lg={4}
+                                    className="mb-4"
+                                >
+                                    <Card className="h-100 shadow-sm border-0">
 
-                                    <div className="d-flex justify-content-between align-items-start mb-3">
+                                        <Card.Body>
 
-                                        <h5 className="fw-bold mb-0">
-                                            {publication.title}
-                                        </h5>
+                                            <div className="d-flex justify-content-between align-items-start mb-3">
 
-                                        <Badge
-                                            bg={getStateVariant(publication.state)}
-                                        >
-                                            {getStateLabel(publication.state)}
-                                        </Badge>
+                                                <h5
+                                                    className="fw-bold mb-0"
+                                                    role="button"
+                                                    onClick={() =>
+                                                        navigate(`/auctions/${publication.auctionId}/live?demoUserId=${activities.userId}`)
+                                                    }
+                                                >
+                                                    {publication.title}
+                                                </h5>
 
-                                    </div>
+                                                <Badge
+                                                    bg={getStateVariant(publication.state)}
+                                                >
+                                                    {getStateLabel(publication.state)}
+                                                </Badge>
 
-                                    <p className="text-muted small mb-2">
-                                        Cierre
-                                    </p>
+                                            </div>
 
-                                    <p className="mb-3">
-                                        {publication.endDate}
-                                    </p>
+                                            <p className="text-muted small mb-1">
+                                                Cierre
+                                            </p>
 
-                                    <div className="mb-3">
+                                            <p className="mb-3">
+                                                {formatDate(publication.endDate)}
+                                            </p>
 
-                                        <p className="text-muted small mb-1">
-                                            Adjudicación
-                                        </p>
+                                            <div className="mb-3">
 
-                                        <Badge
-                                            bg={
-                                                publication.awarded
-                                                    ? 'success'
-                                                    : 'secondary'
-                                            }
-                                        >
-                                            {publication.awarded
-                                                ? 'Adjudicada'
-                                                : 'Sin adjudicar'}
-                                        </Badge>
+                                                <p className="text-muted small mb-1">
+                                                    Adjudicación
+                                                </p>
 
-                                    </div>
+                                                <Badge
+                                                    bg={
+                                                        publication.awarded
+                                                            ? 'success'
+                                                            : 'secondary'
+                                                    }
+                                                >
+                                                    {publication.awarded
+                                                        ? 'Adjudicada'
+                                                        : 'Sin adjudicar'}
+                                                </Badge>
 
-                                    <div className="border-top pt-3">
+                                            </div>
 
-                                        <p className="text-muted small mb-1">
-                                            Ingreso
-                                        </p>
+                                            <div className="border-top pt-3">
 
-                                        <h5 className="fw-bold mb-0">
-                                            ${publication.revenue}
-                                        </h5>
+                                                <p className="text-muted small mb-1">
+                                                    Ingreso
+                                                </p>
 
-                                    </div>
+                                                <h5 className="fw-bold mb-0">
+                                                    ${publication.revenue}
+                                                </h5>
 
-                                </Card.Body>
+                                            </div>
 
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            )}
+                                        </Card.Body>
+
+                                    </Card>
+                                </Col>
+                            ))}
+                        </Row>
+                    )}
+
+                </div>
+            </Collapse>
         </div>
 
-        {/* Mis compras / pujas */}
+        {/* MIS COMPRAS / PUJAS */}
+
         <div className="mb-5">
 
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -297,76 +344,95 @@ return (
                     </p>
                 </div>
 
-                <Badge bg="primary" pill>
-                    {activities.participations.length}
-                </Badge>
+                <div className="d-flex align-items-center gap-2">
+                    <Badge bg="primary" pill>
+                        {activities.participations.length}
+                    </Badge>
+
+                    <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => setShowParticipations(!showParticipations)}
+                        aria-expanded={showParticipations}
+                    >
+                        {showParticipations
+                            ? 'Ocultar pujas'
+                            : 'Mostrar pujas'}
+                    </Button>
+                </div>
             </div>
 
-            {activities.participations.length === 0 ? (
-                <Card className="border-0 shadow-sm">
-                    <Card.Body className="text-center py-4">
-                        <p className="text-muted mb-0">
-                            No participaste en ninguna subasta.
-                        </p>
-                    </Card.Body>
-                </Card>
-            ) : (
-                <Row>
-                    {activities.participations.map(participation => (
-                        <Col
-                            key={participation.auctionId}
-                            xs={12}
-                            md={6}
-                            lg={4}
-                            className="mb-4"
-                        >
-                            <Card className="h-100 shadow-sm border-0">
+            <Collapse in={showParticipations}>
+                <div>
 
-                                <Card.Body>
+                    {activities.participations.length === 0 ? (
+                        <Card className="border-0 shadow-sm">
+                            <Card.Body className="text-center py-4">
+                                <p className="text-muted mb-0">
+                                    No participaste en ninguna subasta.
+                                </p>
+                            </Card.Body>
+                        </Card>
+                    ) : (
+                        <Row>
+                            {activities.participations.map(participation => (
+                                <Col
+                                    key={participation.auctionId}
+                                    xs={12}
+                                    md={6}
+                                    lg={4}
+                                    className="mb-4"
+                                >
+                                    <Card className="h-100 shadow-sm border-0">
 
-                                    <div className="d-flex justify-content-between align-items-start mb-3">
+                                        <Card.Body>
 
-                                        <h5 className="fw-bold mb-0">
-                                            {participation.title}
-                                        </h5>
+                                            <div className="d-flex justify-content-between align-items-start mb-3">
 
-                                        <Badge
-                                            bg={getStateVariant(participation.state)}
-                                        >
-                                            {getStateLabel(participation.state)}
-                                        </Badge>
+                                                <h5 className="fw-bold mb-0">
+                                                    {participation.title}
+                                                </h5>
 
-                                    </div>
+                                                <Badge
+                                                    bg={getStateVariant(participation.state)}
+                                                >
+                                                    {getStateLabel(participation.state)}
+                                                </Badge>
 
-                                    <p className="text-muted small mb-1">
-                                        Cierre
-                                    </p>
+                                            </div>
 
-                                    <p className="mb-3">
-                                        {participation.endDate}
-                                    </p>
+                                            <p className="text-muted small mb-1">
+                                                Cierre
+                                            </p>
 
-                                    <div className="border-top pt-3">
+                                            <p className="mb-3">
+                                                {formatDate(participation.endDate)}
+                                            </p>
 
-                                        <p className="text-muted small mb-1">
-                                            Resultado
-                                        </p>
+                                            <div className="border-top pt-3">
 
-                                        <Badge
-                                            bg={getParticipationVariant(participation)}
-                                        >
-                                            {getParticipationLabel(participation)}
-                                        </Badge>
+                                                <p className="text-muted small mb-1">
+                                                    Resultado
+                                                </p>
 
-                                    </div>
+                                                <Badge
+                                                    bg={getParticipationVariant(participation)}
+                                                >
+                                                    {getParticipationLabel(participation)}
+                                                </Badge>
 
-                                </Card.Body>
+                                            </div>
 
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            )}
+                                        </Card.Body>
+
+                                    </Card>
+                                </Col>
+                            ))}
+                        </Row>
+                    )}
+
+                </div>
+            </Collapse>
         </div>
 
     </Container>

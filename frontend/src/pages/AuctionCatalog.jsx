@@ -45,20 +45,45 @@ function AuctionCatalog() {
     }
     return (
         <Container as="main" id="catalog" className="catalog-section">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="h4 fw-bold mb-0">Explorá las subastas</h2>
-                <Button
-                    variant="primary"
-                    onClick={() => navigate('/auctions/new')}
-                >
-                    Publicar subasta
-                </Button>
-                <Button onClick={() => navigate('/wallet')}>
-                    Mi billetera
-                </Button>
-                <Button onClick={() => navigate('/users/1/activities')}>
-                    Mis actividades
-                </Button>
+            <div className="catalog-heading mb-4">
+
+                <div>
+                    <h2 className="catalog-title">
+                        Explorá las subastas
+                    </h2>
+
+                    <p className="text-secondary small mb-0">
+                        Encontrá oportunidades y seguí las subastas que te interesan.
+                    </p>
+                </div>
+
+                <div className="catalog-actions">
+
+                    <Button
+                        variant="light"
+                        className="catalog-action-button"
+                        onClick={() => navigate('/wallet/1')}
+                    >
+                        Mi billetera
+                    </Button>
+
+                    <Button
+                        variant="light"
+                        className="catalog-action-button"
+                        onClick={() => navigate('/users/1/activities')}
+                    >
+                        Mis actividades
+                    </Button>
+
+                    <Button
+                        variant="primary"
+                        className="catalog-publish-button"
+                        onClick={() => navigate('/auctions/new')}
+                    >
+                        + Publicar subasta
+                    </Button>
+
+                </div>
 
             </div>
 

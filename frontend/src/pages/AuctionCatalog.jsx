@@ -62,7 +62,7 @@ function AuctionCatalog() {
                     <Button
                         variant="light"
                         className="catalog-action-button"
-                        onClick={() => navigate('/wallet')}
+                        onClick={() => navigate('/wallet/1')}
                     >
                         Mi billetera
                     </Button>

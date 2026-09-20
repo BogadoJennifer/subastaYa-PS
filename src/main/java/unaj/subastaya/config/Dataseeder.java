@@ -173,13 +173,9 @@ class Dataseeder {
             //ledger transactions
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "DEPOSIT", BigDecimal.valueOf(150000), LocalDateTime.now());
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "HOLD", BigDecimal.valueOf(45000), LocalDateTime.now());
-            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "PAYMENT", BigDecimal.valueOf(45000), LocalDateTime.now());
-
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "DEPOSIT", BigDecimal.valueOf(200000), LocalDateTime.now());
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "HOLD", BigDecimal.valueOf(35000), LocalDateTime.now());
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "RELEASE", BigDecimal.valueOf(35000), LocalDateTime.now());
-
-            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletVendor, "CHARGE", BigDecimal.valueOf(45000), LocalDateTime.now());
 
             // Active critical auction:
             // closes in two minutes to test visual alert and anti-sniping rule
@@ -230,15 +226,15 @@ class Dataseeder {
                     new BigDecimal("500000"),
                     LocalDateTime.now().minusHours(48),
                     LocalDateTime.now().minusHours(24),
-                    "FINISHED"
+                    "ACTIVE"
             );
 
             biddingService.createBid(
                     bidRepository,
                     auctionFour,
                     buyer1,
-                    new BigDecimal("400000"),
-                    LocalDateTime.now()
+                    new BigDecimal("45000"),
+                    LocalDateTime.now().minusHours(25)
             );
 
             // Finished auction with no bids
@@ -253,13 +249,8 @@ class Dataseeder {
                     new BigDecimal("5000"),
                     LocalDateTime.now().minusHours(2),
                     LocalDateTime.now().minusHours(1),
-                    "FINISHED"
+                    "ACTIVE"
             );
-
-            if (auctionFive.getBuyer() == null) {
-                auctionFive.setState("UNSOLD");
-                auctionRepository.save(auctionFive);
-            }
 
             auctionOne.setImageUrl("/images/nintendo.jpg");
             auctionTwo.setImageUrl("/images/sweater.png");

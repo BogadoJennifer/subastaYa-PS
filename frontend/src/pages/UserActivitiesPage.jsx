@@ -253,8 +253,7 @@ return (
                                     lg={4}
                                     className="mb-4"
                                 >
-                                    <Card className="h-100 shadow-sm border-0">
-
+                                    <Card className="h-100 shadow-sm border-4">
                                         <Card.Body>
 
                                             <div className="d-flex justify-content-between align-items-start mb-3">
@@ -383,7 +382,7 @@ return (
                                     lg={4}
                                     className="mb-4"
                                 >
-                                    <Card className="h-100 shadow-sm border-0">
+                                    <Card className="h-100 shadow-sm border-4">
 
                                         <Card.Body>
 

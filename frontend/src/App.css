@@ -1,3 +1,16 @@
+.auction-card {
+  background-color: #479a34; /* o el color de fondo que prefieras */
+  border: 1px solid #198754;  /* borde verde */
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Efecto opcional al pasar el mouse por encima */
+.auction-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(25, 135, 84, 0.2);
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

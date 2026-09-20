@@ -23,10 +23,13 @@ public class BiddingService {
     private final CategoriesRepository categoriesRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    private final AuditLogRepository auditLogRepository;
 
     public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository,
                           BidRepository bidRepository, EscrowService escrowService, UserRepository userRepository,
-                          CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository, org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate) {
+                          CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository, org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate,
+                          AuditLogRepository auditLogRepository) {
+
         this.auctionRepository = auctionRepository;
         this.walletRepository = walletRepository;
         this.bidRepository = bidRepository;
@@ -34,6 +37,7 @@ public class BiddingService {
         this.userRepository = userRepository;
         this.categoriesRepository = categoriesRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+        this.auditLogRepository = auditLogRepository;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -119,7 +123,25 @@ public class BiddingService {
                 remainingTime.compareTo(Duration.ofSeconds(60)) <= 0;
 
         if (wasExtended) {
-            auction.setEndDate(auction.getEndDate().plusMinutes(2));
+            LocalDateTime previousEndDate = auction.getEndDate();
+
+            auction.setEndDate(previousEndDate.plusMinutes(2));
+
+            AuditLog auditLog = new AuditLog();
+
+            auditLog.setEntity("AUCTION");
+            auditLog.setEntityId(auctionId);
+            auditLog.setAction("ANTI_SNIPING_EXTENSION");
+            auditLog.setUserId(bidderId);
+            auditLog.setDate(now);
+            auditLog.setDetailJson(
+                    "{\"bidId\":" + savedBid.getId()
+                            + ",\"previousEndDate\":\"" + previousEndDate
+                            + "\",\"newEndDate\":\"" + auction.getEndDate()
+                            + "\"}"
+            );
+
+            auditLogRepository.save(auditLog);
         }
 
         auctionRepository.save(auction);

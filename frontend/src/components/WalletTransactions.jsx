@@ -1,4 +1,4 @@
-import { Table } from 'react-bootstrap'
+import { Table, Badge } from 'react-bootstrap'
 
 function WalletTransactions({ transactions }) {
 
@@ -8,6 +8,14 @@ function WalletTransactions({ transactions }) {
         RELEASE: 'Oferta liberada',
         PAYMENT: 'Pago de subasta',
         CHARGE: 'Cobro de venta'
+    }
+
+    const variants = {
+        DEPOSIT: 'success',
+        HOLD: 'warning',
+        RELEASE: 'info',
+        PAYMENT: 'danger',
+        CHARGE: 'primary'
     }
 
     const formatMoney = (value) => {
@@ -45,8 +53,12 @@ function WalletTransactions({ transactions }) {
                     {transactions.map((transaction) => (
                         <tr key={transaction.id}>
                             <td>
-                                {descriptions[transaction.type] ||
-                                    transaction.type}
+                                <Badge
+                                    bg={variants[transaction.type] || 'secondary'}
+                                >
+                                    {descriptions[transaction.type] ||
+                                        transaction.type}
+                                </Badge>
                             </td>
 
                             <td>

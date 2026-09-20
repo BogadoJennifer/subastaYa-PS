@@ -92,8 +92,8 @@ class Dataseeder {
                     walletRepository,
                     buyer2,
                     new BigDecimal("200000"),
-                    new BigDecimal("200000"),
-                    BigDecimal.ZERO
+                    new BigDecimal("80000"),
+                    new BigDecimal("120000")
             );
 
             Wallet walletNoFunds = biddingService.createWallet(
@@ -173,13 +173,9 @@ class Dataseeder {
             //ledger transactions
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "DEPOSIT", BigDecimal.valueOf(150000), LocalDateTime.now());
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "HOLD", BigDecimal.valueOf(45000), LocalDateTime.now());
-            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer1, "PAYMENT", BigDecimal.valueOf(45000), LocalDateTime.now());
-
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "DEPOSIT", BigDecimal.valueOf(200000), LocalDateTime.now());
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "HOLD", BigDecimal.valueOf(35000), LocalDateTime.now());
             biddingService.createLedgerTransaction(ledgerTransactionRepository, walletBuyer2, "RELEASE", BigDecimal.valueOf(35000), LocalDateTime.now());
-
-            biddingService.createLedgerTransaction(ledgerTransactionRepository, walletVendor, "CHARGE", BigDecimal.valueOf(45000), LocalDateTime.now());
 
             // Active critical auction:
             // closes in two minutes to test visual alert and anti-sniping rule
@@ -226,20 +222,33 @@ class Dataseeder {
                     vehicles,
                     "Ford 2006",
                     "good condition",
-                    new BigDecimal("3000000"),
-                    new BigDecimal("500000"),
+                    new BigDecimal("100000"),
+                    new BigDecimal("10000"),
                     LocalDateTime.now().minusHours(48),
                     LocalDateTime.now().minusHours(24),
-                    "FINISHED"
+                    "ACTIVE"
             );
 
+            LocalDateTime fordBidDate = LocalDateTime.now().minusHours(25);
+
+            // Create Ford's winning bid.
             biddingService.createBid(
                     bidRepository,
                     auctionFour,
-                    buyer1,
-                    new BigDecimal("400000"),
-                    LocalDateTime.now()
+                    buyer2,
+                    new BigDecimal("120000"),
+                    fordBidDate
             );
+
+        // Record the funds already reserved in walletBuyer2.
+            LedgerTransaction fordHold = new LedgerTransaction();
+            fordHold.setWallet(walletBuyer2);
+            fordHold.setAuctionId(auctionFour.getId());
+            fordHold.setType("HOLD");
+            fordHold.setAmount(new BigDecimal("120000"));
+            fordHold.setDate(fordBidDate);
+
+            ledgerTransactionRepository.save(fordHold);
 
             // Finished auction with no bids
             Auction auctionFive = biddingService.createAuction(
@@ -253,13 +262,8 @@ class Dataseeder {
                     new BigDecimal("5000"),
                     LocalDateTime.now().minusHours(2),
                     LocalDateTime.now().minusHours(1),
-                    "FINISHED"
+                    "ACTIVE"
             );
-
-            if (auctionFive.getBuyer() == null) {
-                auctionFive.setState("UNSOLD");
-                auctionRepository.save(auctionFive);
-            }
 
             auctionOne.setImageUrl("/images/nintendo.jpg");
             auctionTwo.setImageUrl("/images/sweater.png");

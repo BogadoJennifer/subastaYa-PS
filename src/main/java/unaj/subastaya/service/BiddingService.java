@@ -23,10 +23,15 @@ public class BiddingService {
     private final CategoriesRepository categoriesRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    private final AuditLogRepository auditLogRepository;
+    private final AuditLogService auditLogService;
+
 
     public BiddingService(AuctionRepository auctionRepository, WalletRepository walletRepository,
                           BidRepository bidRepository, EscrowService escrowService, UserRepository userRepository,
-                          CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository, org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate) {
+                          CategoriesRepository categoriesRepository, LedgerTransactionRepository ledgerTransactionRepository, org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate,
+                          AuditLogRepository auditLogRepository, AuditLogService auditLogService) {
+
         this.auctionRepository = auctionRepository;
         this.walletRepository = walletRepository;
         this.bidRepository = bidRepository;
@@ -34,7 +39,9 @@ public class BiddingService {
         this.userRepository = userRepository;
         this.categoriesRepository = categoriesRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+        this.auditLogRepository = auditLogRepository;
         this.messagingTemplate = messagingTemplate;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -51,7 +58,15 @@ public class BiddingService {
 
         if (bidAmount == null
                 || bidAmount.signum() <= 0
-                || bidAmount.stripTrailingZeros().scale() > 2) {
+                || bidAmount.stripTrailingZeros().scale() > 2){
+
+            auditLogService.saveRejectedBidAudit(
+                    auctionId,
+                    bidderId,
+                    "{\"reason\":\"INVALID_BID_AMOUNT\",\"amount\":"
+                            + (bidAmount == null ? "null" : bidAmount)
+                            + "}"
+            );
             throw new InvalidBidAmountException(
                     "La oferta debe ser positiva y tener como máximo dos decimales"
             );
@@ -66,7 +81,14 @@ public class BiddingService {
 
         if (!"ACTIVE".equals(auction.getState())
                 || now.isBefore(auction.getStartDate())
-                || !now.isBefore(auction.getEndDate())) {
+                || !now.isBefore(auction.getEndDate())){
+            auditLogService.saveRejectedBidAudit(
+                    auctionId,
+                    bidderId,
+                    "{\"reason\":\"AUCTION_NOT_ACTIVE\",\"state\":\""
+                            + auction.getState()
+                            + "\"}"
+            );
             throw new AuctionNotActiveException(
                     "La subasta no está activa en este momento"
             );
@@ -79,6 +101,13 @@ public class BiddingService {
 
         if (auction.getVendor() != null
                 && auction.getVendor().getId().equals(bidderId)) {
+
+            auditLogService.saveRejectedBidAudit(
+                    auctionId,
+                    bidderId,
+                    "{\"reason\":\"VENDOR_CANNOT_BID\"}"
+            );
+
             throw new InvalidBidAmountException(
                     "El vendedor no puede ofertar en su propia subasta"
             );
@@ -94,13 +123,37 @@ public class BiddingService {
         );
 
         if (bidAmount.compareTo(minimumBid) < 0) {
+
+            auditLogService.saveRejectedBidAudit(
+                    auctionId,
+                    bidderId,
+                    "{\"reason\":\"BID_BELOW_MINIMUM\",\"amount\":"
+                            + bidAmount
+                            + ",\"minimumBid\":"
+                            + minimumBid
+                            + "}"
+            );
+
             throw new InvalidBidAmountException(
                     "La oferta mínima es $" + minimumBid.toPlainString()
             );
         }
 
         // Process escrow before saving the new bid.
-        escrowService.processEscrow(auction, bidder, bidAmount);
+        try {
+            escrowService.processEscrow(auction, bidder, bidAmount);
+        } catch (InsufficientFundsException exception) {
+
+            auditLogService.saveRejectedBidAudit(
+                    auctionId,
+                    bidderId,
+                    "{\"reason\":\"INSUFFICIENT_FUNDS\",\"amount\":"
+                            + bidAmount
+                            + "}"
+            );
+
+            throw exception;
+        }
 
         Bid bid = new Bid();
         bid.setAuction(auction);
@@ -119,7 +172,25 @@ public class BiddingService {
                 remainingTime.compareTo(Duration.ofSeconds(60)) <= 0;
 
         if (wasExtended) {
-            auction.setEndDate(auction.getEndDate().plusMinutes(2));
+            LocalDateTime previousEndDate = auction.getEndDate();
+
+            auction.setEndDate(previousEndDate.plusMinutes(2));
+
+            AuditLog auditLog = new AuditLog();
+
+            auditLog.setEntity("AUCTION");
+            auditLog.setEntityId(auctionId);
+            auditLog.setAction("ANTI_SNIPING_EXTENSION");
+            auditLog.setUserId(bidderId);
+            auditLog.setDate(now);
+            auditLog.setDetailJson(
+                    "{\"bidId\":" + savedBid.getId()
+                            + ",\"previousEndDate\":\"" + previousEndDate
+                            + "\",\"newEndDate\":\"" + auction.getEndDate()
+                            + "\"}"
+            );
+
+            auditLogRepository.save(auditLog);
         }
 
         auctionRepository.save(auction);

@@ -19,6 +19,11 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             String state,
             LocalDateTime dateTime
     );
+    List<Auction> findByStateAndStartDateBefore(
+            String state,
+            LocalDateTime dateTime
+    );
+
     List<Auction> findByVendorId(Long vendorId);
 
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)

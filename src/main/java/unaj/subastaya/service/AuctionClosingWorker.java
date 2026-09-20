@@ -52,18 +52,53 @@ public class AuctionClosingWorker {
         this.messagingTemplate = messagingTemplate;
     }
 
+    //searh for auctions that are expired
     @Scheduled(fixedRate = 10000)
     @Transactional
-    //searh for auctions that are expired
     public void closeExpiredAuctions() {
+
         LocalDateTime now = LocalDateTime.now();
-        List<Auction> expiredAuctions = auctionRepository.findByStateAndEndDateBefore("ACTIVE", now);
+
+        List<Auction> scheduledAuctions =
+                auctionRepository.findByStateAndStartDateBefore(
+                        "SCHEDULED",
+                        now
+                );
+
+        for (Auction auction : scheduledAuctions) {
+
+            String previousState = auction.getState();
+
+            auction.setState("ACTIVE");
+            auctionRepository.save(auction);
+
+            saveStateChangeAudit(
+                    auction,
+                    previousState,
+                    "ACTIVE"
+            );
+
+            log.info(
+                    "Auction {} activated automatically",
+                    auction.getId()
+            );
+        }
+
+        List<Auction> expiredAuctions =
+                auctionRepository.findByStateAndEndDateBefore(
+                        "ACTIVE",
+                        now
+                );
 
         if (expiredAuctions.isEmpty()) {
             return;
         }
-        log.info("Worker Job: Procesando {} subastas vencidas", expiredAuctions.size());
-        //process each auction that is expired
+
+        log.info(
+                "Worker Job: Procesando {} subastas vencidas",
+                expiredAuctions.size()
+        );
+
         for (Auction auction : expiredAuctions) {
             processAuctionClosing(auction);
         }

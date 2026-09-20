@@ -87,7 +87,6 @@ Para ejecutar el proyecto se necesita tener instalado:
 * Flyway
 * Spring WebSocket
 * Springdoc OpenAPI UI 3.1.1
-* Lombok y DevTools.
 * React (para el frontend)
 * IntelliJ IDEA (opcional)
 

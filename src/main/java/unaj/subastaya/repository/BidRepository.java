@@ -1,0 +1,35 @@
+package unaj.subastaya.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import unaj.subastaya.model.Bid;
+
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface BidRepository extends JpaRepository<Bid, Long> {
+
+    List<Bid> findByAuctionId(Long auctionId);
+    List<Bid> findByBidderId(Long bidderId);
+    long countByAuctionId(Long auctionId);
+    // Consulta útil para obtener directamente la puja más alta de una subasta
+    Optional<Bid> findFirstByAuctionIdOrderByAmountDescBidDateAscIdAsc(
+            Long auctionId
+    );
+
+    List<Bid> findTop50ByAuctionIdOrderByBidDateDescIdDesc(
+            Long auctionId
+    );
+
+    boolean existsByAuctionIdAndBidderId(
+            Long auctionId,
+            Long bidderId
+    );
+
+    default Optional<Bid> findHighestBid(Long auctionId) {
+        return findFirstByAuctionIdOrderByAmountDescBidDateAscIdAsc(auctionId);
+    }
+
+}

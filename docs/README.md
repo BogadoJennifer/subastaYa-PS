@@ -18,8 +18,9 @@ El objetivo es desarrollar una aplicación que permita un entorno basado en dos 
 ## Tecnologías utilizadas
 
 * Java
+* Git y GitHub
 * Spring Boot
-* Hibernate
+* Spring Data JPA e Hibernate
 * React
 * Gradle
 * Spring WebSocket
@@ -27,6 +28,7 @@ El objetivo es desarrollar una aplicación que permita un entorno basado en dos 
 * PostgreSQL
 * flyway
 * Bruno
+* Mockito
 
 ## Arquitectura
 

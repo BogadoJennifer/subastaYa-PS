@@ -4,8 +4,15 @@ info:
   seq: 5
 
 http:
-  method: GET
-  url: ""
+  method: POST
+  url: http://localhost:8080/api/auctions/1/bids
+  body:
+    type: json
+    data: |-
+      {
+        "bidderId": 2,
+        "amount": 1
+      }
   auth: inherit
 
 settings:

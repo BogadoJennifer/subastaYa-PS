@@ -37,22 +37,11 @@ por capas técnicas: controladores, servicios, repositorios y entidades. Persist
 aplicar cambios de esquema.
 
 Para una explicación más detallada de la arquitectura, consultar:
-`backend/docs`
-
-La raíz del repositorio separa los componentes de la aplicación:
-
-```text
-backend/   # API Spring Boot y su proyecto Gradle
-frontend/  # aplicación React/Vite
-docs/      # documentación técnica y colecciones de prueba
-```
-
-Los archivos Gradle de la raíz coordinan el módulo `backend`, para que el repositorio
-pueda abrirse y ejecutarse como un único proyecto desde el IDE.
+`docs/architecture.md`
 
 ## Documentación
 
-La documentación técnica del proyecto se encuentra dentro de la carpeta `docs`.
+La documentación técnica del proyecto se encuentra dentro de la carpeta `docs/`.
 
 ```text
 docs/
@@ -64,26 +53,26 @@ docs/
 
 ### Arquitectura
 
-`backend/docs`
+`docs/architecture.md`
 
 Contiene la explicación de la arquitectura utilizada y de la organización de los componentes del sistema.
 
 ### API
 
-`backend/docs`
+`docs/api-spec.md`
 
 Contiene la especificación de los endpoints de la API, sus parámetros, respuestas y posibles errores.
 
 ### Decisiones técnicas
 
-`backend/docs`
+`docs/decisions/`
 
 Contiene las decisiones técnicas importantes tomadas durante el desarrollo del proyecto y los motivos que llevaron a cada decisión.
 Basandonos en el patrón de RFC (Request for Comments) para documentar las decisiones técnicas.
 
 ### Bruno
 
-`backend/docs`
+`docs/collections/`
 
 Contiene las colecciones y configuraciones de Bruno utilizadas para probar la API.
 
@@ -107,13 +96,13 @@ Para ejecutar el proyecto se necesita tener instalado:
 
 1. Clonar el repositorio.
 
-2. Abrir la raíz del repositorio en IntelliJ IDEA (opcional) y recargar el proyecto Gradle. El módulo `backend` se importará automáticamente.
+2. Abrir el proyecto en IntelliJ IDEA(opcional).
 
 3. Configurar las variables de entorno necesarias.
 
 4. Configurar la conexión con la base de datos.
 
-5. Abrir una terminal y acceder a la carpeta del backend (`cd backend`). Ejecutar `gradlew.bat bootRun` en Windows, o `./gradlew bootRun` en macOS/Linux.
+5. Ejecutar la aplicación.
 
 6. Abrir terminal y acceder a la carpeta del frontend (cd frontend).
 
@@ -121,14 +110,11 @@ Para ejecutar el proyecto se necesita tener instalado:
 
 ## Ejecución
 
-Una vez iniciados ambos servidores, la aplicación web estará disponible en:
+Una vez iniciada la aplicación, la API estará disponible en:
 
 ```text
 http://localhost:5173/
 ```
-
-La API continúa disponible en `http://localhost:8080/`. El proxy configurado en
-`frontend/vite.config.js` conserva la comunicación del frontend con la API y el WebSocket.
 
 ## Autores
 

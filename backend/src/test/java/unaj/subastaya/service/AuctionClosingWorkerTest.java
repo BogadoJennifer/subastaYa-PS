@@ -7,10 +7,7 @@ import unaj.subastaya.model.Bid;
 import unaj.subastaya.model.LedgerTransaction;
 import unaj.subastaya.model.User;
 import unaj.subastaya.model.Wallet;
-import unaj.subastaya.repository.AuctionRepository;
-import unaj.subastaya.repository.BidRepository;
-import unaj.subastaya.repository.LedgerTransactionRepository;
-import unaj.subastaya.repository.WalletRepository;
+import unaj.subastaya.repository.*;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
@@ -42,11 +39,15 @@ class AuctionClosingWorkerTest {
         SimpMessagingTemplate messagingTemplate =
                 mock(SimpMessagingTemplate.class);
 
+        AuditLogRepository auditLogRepository =
+                mock(AuditLogRepository.class);
+
         AuctionClosingWorker worker = new AuctionClosingWorker(
                 auctionRepository,
                 bidRepository,
                 walletRepository,
                 ledgerTransactionRepository,
+                auditLogRepository,
                 messagingTemplate
         );
 
@@ -252,6 +253,8 @@ class AuctionClosingWorkerTest {
         WalletRepository walletRepository = mock(WalletRepository.class);
         LedgerTransactionRepository ledgerTransactionRepository =
                 mock(LedgerTransactionRepository.class);
+        AuditLogRepository audit =
+                mock(AuditLogRepository.class);
         SimpMessagingTemplate messagingTemplate =
                 mock(SimpMessagingTemplate.class);
 
@@ -260,6 +263,7 @@ class AuctionClosingWorkerTest {
                 bidRepository,
                 walletRepository,
                 ledgerTransactionRepository,
+                audit,
                 messagingTemplate
         );
 

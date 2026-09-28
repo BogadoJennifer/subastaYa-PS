@@ -11,11 +11,11 @@ function WalletTransactions({ transactions }) {
     }
 
     const variants = {
-        DEPOSIT: 'success',
-        HOLD: 'warning',
-        RELEASE: 'info',
+        DEPOSIT: 'primary',
+        HOLD: 'danger',
+        RELEASE: 'warning',
         PAYMENT: 'danger',
-        CHARGE: 'primary'
+        CHARGE: 'success'
     }
 
     const formatMoney = (value) => {
@@ -55,6 +55,12 @@ function WalletTransactions({ transactions }) {
                             <td>
                                 <Badge
                                     bg={variants[transaction.type] || 'secondary'}
+                                    className="text-white px-2 py-1"
+                                    style={{
+                                        textShadow: '0 2px 2px rgba(44, 20, 33, 1)',
+                                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.35)',
+                                        display: 'inline-block'
+                                    }}
                                 >
                                     {descriptions[transaction.type] ||
                                         transaction.type}

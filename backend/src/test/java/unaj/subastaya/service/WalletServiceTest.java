@@ -4,8 +4,10 @@ import org.junit.jupiter.api.Test;
 import unaj.subastaya.model.LedgerTransaction;
 import unaj.subastaya.model.User;
 import unaj.subastaya.model.Wallet;
+import unaj.subastaya.repository.AuditLogRepository;
 import unaj.subastaya.repository.LedgerTransactionRepository;
 import unaj.subastaya.repository.WalletRepository;
+import unaj.subastaya.repository.AuditLogRepository;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -22,10 +24,13 @@ class WalletServiceTest {
         WalletRepository walletRepository = mock(WalletRepository.class);
         LedgerTransactionRepository ledgerTransactionRepository =
                 mock(LedgerTransactionRepository.class);
+        AuditLogRepository auditLogRepository = mock(AuditLogRepository.class);
+
 
         WalletService walletService = new WalletService(
                 walletRepository,
-                ledgerTransactionRepository
+                ledgerTransactionRepository,
+                auditLogRepository
         );
 
         User user = new User();

@@ -8,6 +8,8 @@ import unaj.subastaya.model.LedgerTransaction;
 import unaj.subastaya.model.Wallet;
 import unaj.subastaya.repository.LedgerTransactionRepository;
 import unaj.subastaya.repository.WalletRepository;
+import unaj.subastaya.model.AuditLog;
+import unaj.subastaya.repository.AuditLogRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,13 +19,16 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
+    private final AuditLogRepository auditLogRepository;
 
     public WalletService(
             WalletRepository walletRepository,
-            LedgerTransactionRepository ledgerTransactionRepository
+            LedgerTransactionRepository ledgerTransactionRepository,
+            AuditLogRepository auditLogRepository
     ) {
         this.walletRepository = walletRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+        this.auditLogRepository = auditLogRepository;
     }
 
     public WalletSummaryDto getWalletByUserId(Long userId) {
@@ -60,14 +65,27 @@ public class WalletService {
 
         Wallet updatedWallet = walletRepository.save(wallet);
 
+        LocalDateTime now = LocalDateTime.now();
+
         LedgerTransaction transaction = new LedgerTransaction();
 
         transaction.setWallet(updatedWallet);
         transaction.setType("DEPOSIT");
         transaction.setAmount(amount);
-        transaction.setDate(LocalDateTime.now());
+        transaction.setDate(now);
 
         ledgerTransactionRepository.save(transaction);
+
+        AuditLog auditLog = new AuditLog();
+
+        auditLog.setEntity("WALLET");
+        auditLog.setEntityId(updatedWallet.getId());
+        auditLog.setAction("MANUAL_DEPOSIT");
+        auditLog.setUserId(updatedWallet.getUser().getId());
+        auditLog.setDate(now);
+        auditLog.setDetailJson("{\"amount\":" + amount + "}");
+
+        auditLogRepository.save(auditLog);
 
         return updatedWallet;
     }

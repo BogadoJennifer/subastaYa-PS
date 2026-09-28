@@ -16,6 +16,8 @@ import unaj.subastaya.repository.AuctionRepository;
 import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.repository.LedgerTransactionRepository;
 import unaj.subastaya.repository.WalletRepository;
+import unaj.subastaya.model.AuditLog;
+import unaj.subastaya.repository.AuditLogRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,31 +34,71 @@ public class AuctionClosingWorker {
     private final BidRepository bidRepository;
     private final WalletRepository walletRepository;
     private final LedgerTransactionRepository ledgerTransactionRepository;
+    private final AuditLogRepository auditLogRepository;
     private final SimpMessagingTemplate messagingTemplate;
+
     public AuctionClosingWorker(AuctionRepository auctionRepository,
                                 BidRepository bidRepository,
                                 WalletRepository walletRepository,
                                 LedgerTransactionRepository ledgerTransactionRepository,
+                                AuditLogRepository auditLogRepository,
                                 SimpMessagingTemplate messagingTemplate) {
+
         this.auctionRepository = auctionRepository;
         this.bidRepository = bidRepository;
         this.walletRepository = walletRepository;
         this.ledgerTransactionRepository = ledgerTransactionRepository;
+        this.auditLogRepository = auditLogRepository;
         this.messagingTemplate = messagingTemplate;
     }
 
+    //searh for auctions that are expired
     @Scheduled(fixedRate = 10000)
     @Transactional
-    //searh for auctions that are expired
     public void closeExpiredAuctions() {
+
         LocalDateTime now = LocalDateTime.now();
-        List<Auction> expiredAuctions = auctionRepository.findByStateAndEndDateBefore("ACTIVE", now);
+
+        List<Auction> scheduledAuctions =
+                auctionRepository.findByStateAndStartDateBefore(
+                        "SCHEDULED",
+                        now
+                );
+
+        for (Auction auction : scheduledAuctions) {
+
+            String previousState = auction.getState();
+
+            auction.setState("ACTIVE");
+            auctionRepository.save(auction);
+
+            saveStateChangeAudit(
+                    auction,
+                    previousState,
+                    "ACTIVE"
+            );
+
+            log.info(
+                    "Auction {} activated automatically",
+                    auction.getId()
+            );
+        }
+
+        List<Auction> expiredAuctions =
+                auctionRepository.findByStateAndEndDateBefore(
+                        "ACTIVE",
+                        now
+                );
 
         if (expiredAuctions.isEmpty()) {
             return;
         }
-        log.info("Worker Job: Procesando {} subastas vencidas", expiredAuctions.size());
-        //process each auction that is expired
+
+        log.info(
+                "Worker Job: Procesando {} subastas vencidas",
+                expiredAuctions.size()
+        );
+
         for (Auction auction : expiredAuctions) {
             processAuctionClosing(auction);
         }
@@ -98,8 +140,16 @@ public class AuctionClosingWorker {
 
         //if no found bids, set the state to UNSOLD
         if (winningBidOpt.isEmpty()) {
+            String previousState = auction.getState();
+
             auction.setState("UNSOLD");
             auctionRepository.save(auction);
+
+            saveStateChangeAudit(
+                    auction,
+                    previousState,
+                    "UNSOLD"
+            );
 
             notifyAuctionClosed(auction);
 
@@ -121,9 +171,25 @@ public class AuctionClosingWorker {
         if (winnerWallet == null) {
             throw new IllegalStateException("Billetera del comprador no encontrada id=" + winnerId);
         }
-        winnerWallet.setRetainedBalance(winnerWallet.getRetainedBalance().subtract(winningAmount));
-        winnerWallet.setTotalBalance(winnerWallet.getTotalBalance().subtract(winningAmount));
-        winnerWallet.setAvailableBalance(winnerWallet.getTotalBalance().subtract(winnerWallet.getRetainedBalance()));
+
+        if (winnerWallet.getRetainedBalance().compareTo(winningAmount) < 0) {
+            throw new IllegalStateException(
+                    "El saldo retenido no cubre la oferta ganadora"
+            );
+        }
+
+        winnerWallet.setRetainedBalance(
+                winnerWallet.getRetainedBalance().subtract(winningAmount)
+        );
+
+        winnerWallet.setTotalBalance(
+                winnerWallet.getTotalBalance().subtract(winningAmount)
+        );
+
+        winnerWallet.setAvailableBalance(
+                winnerWallet.getTotalBalance().subtract(winnerWallet.getRetainedBalance())
+        );
+
         walletRepository.save(winnerWallet);
 
         //Save the debit in ledgerTransaction
@@ -157,12 +223,43 @@ public class AuctionClosingWorker {
 
         // set the state to FINISHED
         auction.setBuyer(winningBid.getBidder());
+
+        String previousState = auction.getState();
+
         auction.setState("FINISHED");
         auctionRepository.save(auction);
+
+        saveStateChangeAudit(
+                auction,
+                previousState,
+                "FINISHED"
+        );
+
         notifyAuctionClosed(auction);
 
         log.info("Auditoría Venta: Subasta id={} FINISHED. Ganador id={}, Vendedor id={}, Monto={}",
                 auction.getId(), winnerId, vendorId, winningAmount);
 
+    }
+
+    private void saveStateChangeAudit(
+            Auction auction,
+            String previousState,
+            String newState) {
+
+        AuditLog auditLog = new AuditLog();
+
+        auditLog.setEntity("AUCTION");
+        auditLog.setEntityId(auction.getId());
+        auditLog.setAction("STATE_CHANGE");
+        auditLog.setUserId(null);
+        auditLog.setDate(LocalDateTime.now());
+        auditLog.setDetailJson(
+                "{\"previousState\":\"" + previousState
+                        + "\",\"newState\":\"" + newState
+                        + "\"}"
+        );
+
+        auditLogRepository.save(auditLog);
     }
 }

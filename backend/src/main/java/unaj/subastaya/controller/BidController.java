@@ -11,6 +11,8 @@ import unaj.subastaya.exception.ResourceNotFoundException;
 import unaj.subastaya.repository.AuctionRepository;
 import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.service.BiddingService;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import unaj.subastaya.service.AuditLogService;
 
 import java.util.List;
 
@@ -22,15 +24,18 @@ public class BidController {
     private final BiddingService biddingService;
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
+    private final AuditLogService auditLogService;
 
     public BidController(
             BiddingService biddingService,
             BidRepository bidRepository,
-            AuctionRepository auctionRepository
+            AuctionRepository auctionRepository,
+            AuditLogService auditLogService
     ) {
         this.biddingService = biddingService;
         this.bidRepository = bidRepository;
         this.auctionRepository = auctionRepository;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -62,14 +67,28 @@ public class BidController {
             @PathVariable Long auctionId,
             @RequestBody BidRequestDto dto
     ) {
-        BidResultDto result = biddingService.registerBid(
-                auctionId,
-                dto.bidderId(),
-                dto.amount()
-        );
+        try {
+            BidResultDto result = biddingService.registerBid(
+                    auctionId,
+                    dto.bidderId(),
+                    dto.amount()
+            );
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(result);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(result);
+
+        } catch (ObjectOptimisticLockingFailureException exception) {
+
+            auditLogService.saveRejectedBidAudit(
+                    auctionId,
+                    dto.bidderId(),
+                    "{\"reason\":\"CONCURRENCY_CONFLICT\",\"amount\":"
+                            + dto.amount()
+                            + "}"
+            );
+
+            throw exception;
+        }
     }
 }

@@ -1,1 +1,3 @@
 rootProject.name = 'subastaYa-PS'
+
+include 'backend'

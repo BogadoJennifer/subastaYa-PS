@@ -11,6 +11,7 @@ import unaj.subastaya.dto.LoginRequestDto;
 import unaj.subastaya.dto.RegisterRequestDto;
 import unaj.subastaya.model.User;
 import unaj.subastaya.repository.UserRepository;
+import unaj.subastaya.service.JwtService;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -20,12 +21,15 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public AuthService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -113,7 +117,8 @@ public class AuthService {
         return new AuthResponseDto(
                 user.getId(),
                 user.getName(),
-                user.getEmail()
+                user.getEmail(),
+                jwtService.generateToken(user.getEmail())
         );
     }
 }

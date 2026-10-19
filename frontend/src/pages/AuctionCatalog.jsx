@@ -168,7 +168,6 @@ function AuctionCatalog() {
                                 <Col key={auction.id}>
                                     <AuctionCard
                                         auction={auction}
-                                        onEnterRoom={() => onSelectAuction(auction.id)}
                                     />
                                 </Col>
                             ))}

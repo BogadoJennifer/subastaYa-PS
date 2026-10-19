@@ -7,19 +7,34 @@ import {
     Button,
     Form,
     Alert,
-    Spinner,
-    Table
+    Spinner
 } from 'react-bootstrap'
 import WalletTransactions from '../components/WalletTransactions.jsx'
 import { useParams } from 'react-router-dom'
 
+async function fetchWallet(userId, signal) {
+    const response = await fetch(`/api/wallets/user/${userId}`, { signal })
+    if (!response.ok) {
+        throw new Error('No se pudo obtener la billetera')
+    }
+    return response.json()
+}
+
+async function fetchTransactions(walletId, signal) {
+    if (!walletId) return []
+    const response = await fetch(`/api/wallets/${walletId}/transactions`, { signal })
+    if (!response.ok) {
+        throw new Error('No se pudieron obtener los movimientos')
+    }
+    return response.json()
+}
+
 function WalletPage() {
     const { userId } = useParams()
+    return <WalletContent key={userId} userId={userId} />
+}
 
-    // Temporalmente usamos el usuario 1.
-    // Después lo reemplazamos por el usuario autenticado.
-    //const userId = 1
-
+function WalletContent({ userId }) {
     const [wallet, setWallet] = useState(null)
     const [transactions, setTransactions] = useState([])
     const [amount, setAmount] = useState('')
@@ -32,22 +47,9 @@ function WalletPage() {
         try {
             setError('')
 
-            const response = await fetch(
-                `/api/wallets/user/${userId}`
-            )
-
-            if (!response.ok) {
-                throw new Error('No se pudo obtener la billetera')
-            }
-
-            const data = await response.json()
-            console.log("WALLET:", data)
-
+            const data = await fetchWallet(userId)
             setWallet(data)
-
-            if (data.walletId) {
-                await loadTransactions(data.walletId)
-            }
+            setTransactions(await fetchTransactions(data.walletId))
 
         } catch (error) {
             setError(error.message)
@@ -56,28 +58,29 @@ function WalletPage() {
         }
     }
 
-    const loadTransactions = async (walletId) => {
-        try {
-            const response = await fetch(
-                `/api/wallets/${walletId}/transactions`
-            )
-
-            if (!response.ok) {
-                throw new Error('No se pudieron obtener los movimientos')
-            }
-
-            const data = await response.json()
-
-            setTransactions(data)
-
-        } catch (error) {
-            setError(error.message)
-        }
-    }
-
     useEffect(() => {
-        loadWallet()
-    }, [])
+        const controller = new AbortController()
+        const { signal } = controller
+
+        async function load() {
+            try {
+                const data = await fetchWallet(userId, signal)
+                if (signal.aborted) return
+                setError('')
+                setWallet(data)
+                setTransactions([])
+                const movements = await fetchTransactions(data.walletId, signal)
+                if (!signal.aborted) setTransactions(movements)
+            } catch (error) {
+                if (!signal.aborted) setError(error.message)
+            } finally {
+                if (!signal.aborted) setIsLoading(false)
+            }
+        }
+
+        load()
+        return () => controller.abort()
+    }, [userId])
 
     const handleDeposit = async (event) => {
         event.preventDefault()
@@ -126,14 +129,6 @@ function WalletPage() {
             style: 'currency',
             currency: 'ARS'
         }).format(value ?? 0)
-    }
-
-    const formatDate = (date) => {
-        if (!date) {
-            return '-'
-        }
-
-        return new Date(date).toLocaleString('es-AR')
     }
 
     if (isLoading) {

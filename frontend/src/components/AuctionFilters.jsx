@@ -1,4 +1,4 @@
-import { Alert, Button, Col, Form, Row } from 'react-bootstrap'
+import { Alert, Col, Form, Row } from 'react-bootstrap'
 
 function AuctionFilters({
                             filters,

@@ -1,16 +1,18 @@
+
 package unaj.subastaya.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import unaj.subastaya.security.JwtAuthenticationFilter;
 
 import java.util.List;
@@ -26,10 +28,32 @@ public class SecurityConfig {
             throws Exception {
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors ->
+                        cors.configurationSource(corsConfigurationSource())
+                )
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+
+                        // Permitir solicitudes previas de CORS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Registro e inicio de sesión
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Handshake HTTP de WebSocket y SockJS
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // Consultas públicas de subastas
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/auctions",
+                                "/api/auctions/catalog",
+                                "/api/auctions/*",
+                                "/api/auctions/*/details"
+                        ).permitAll()
+
+                        // Todo lo demás requiere autenticación
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(
                         jwtAuthenticationFilter,

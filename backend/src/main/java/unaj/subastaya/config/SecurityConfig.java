@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
 
                         // Handshake HTTP de WebSocket y SockJS
-                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/ws/**", "/ws-live", "/ws-live/**").permitAll()
 
                         // Consultas públicas de subastas
                         .requestMatchers(

@@ -1,25 +1,21 @@
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import Countdown from '../components/Countdown.jsx'
 import BidHistory from "../components/BidHistory.jsx";
 import { BidConsole } from '../components/BidConsole.jsx'
 import BidStatus from "../components/BidStatus.jsx";
 import { Toast, ToastContainer } from 'react-bootstrap'
-import {apiFetch} from "../utils/api.js";
+import {apiFetch, getCurrentUser} from "../utils/api.js";
 
 function LiveBiddingRoomPage({ auctionId: propId }) {
     const { auctionId: paramId } = useParams()
-    const [searchParams] = useSearchParams()
 
     const id = propId || paramId
 
-    const demoUserId = searchParams.get('demoUserId')
+    const currentUser = getCurrentUser()
+    const currentUserId = currentUser?.id ?? null
 
-    const currentUserId =
-        import.meta.env.DEV && ['1', '2', '3','4'].includes(demoUserId)
-            ? Number(demoUserId)
-            : 2
 
     const [auction, setAuction] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -269,6 +265,19 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
                 )
                 return false
             }
+            try {
+                const historyResponse = await apiFetch(`/api/auctions/${id}/bids`)
+
+                if (historyResponse.ok) {
+                    const updatedBids = await historyResponse.json()
+
+                    if (Array.isArray(updatedBids)) {
+                        setBids(updatedBids)
+                    }
+                }
+            } catch {
+                // La puja ya fue aceptada; el historial se actualizará en la próxima carga.
+            }
 
             setAuction((previousAuction) => {
                 if (!previousAuction) return previousAuction
@@ -298,6 +307,7 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
             setMessage(`¡Oferta de ${formattedAmount} registrada!`)
 
             return true
+
         } catch {
             setFeedbackVariant('warning')
             setMessage(
@@ -313,9 +323,9 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
         <div className="container py-4" style={{ maxWidth: '500px' }}>
             <h2>{auction.title}</h2>
 
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV && currentUser && (
                 <div className="alert alert-secondary py-2">
-                    Usuario de prueba: <strong>Postor {currentUserId}</strong>
+                    Sesión actual: <strong>{currentUser.name}</strong>
                 </div>
             )}
 

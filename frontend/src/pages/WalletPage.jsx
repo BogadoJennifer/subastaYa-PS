@@ -10,31 +10,28 @@ import {
     Spinner
 } from 'react-bootstrap'
 import WalletTransactions from '../components/WalletTransactions.jsx'
-import { useParams } from 'react-router-dom'
+import {apiFetch} from "../utils/api.js";
 
-async function fetchWallet(userId, signal) {
-    const response = await fetch(`/api/wallets/user/${userId}`, { signal })
+async function fetchWallet(signal) {
+    const response = await apiFetch(`/api/wallets/me`, { signal })
     if (!response.ok) {
-        throw new Error('No se pudo obtener la billetera')
-    }
+        throw new Error(`No se pudo obtener la billetera (${response.status})`)    }
     return response.json()
 }
 
-async function fetchTransactions(walletId, signal) {
-    if (!walletId) return []
-    const response = await fetch(`/api/wallets/${walletId}/transactions`, { signal })
+async function fetchTransactions(signal) {
+    const response = await apiFetch(`/api/wallets/me/transactions`, { signal })
     if (!response.ok) {
-        throw new Error('No se pudieron obtener los movimientos')
+        throw new Error(`No se pudieron obtener los movimientos (${response.status})`)
     }
     return response.json()
 }
 
 function WalletPage() {
-    const { userId } = useParams()
-    return <WalletContent key={userId} userId={userId} />
+    return <WalletContent />
 }
 
-function WalletContent({ userId }) {
+function WalletContent({ }) {
     const [wallet, setWallet] = useState(null)
     const [transactions, setTransactions] = useState([])
     const [amount, setAmount] = useState('')
@@ -47,9 +44,9 @@ function WalletContent({ userId }) {
         try {
             setError('')
 
-            const data = await fetchWallet(userId)
+            const data = await fetchWallet()
             setWallet(data)
-            setTransactions(await fetchTransactions(data.walletId))
+            setTransactions(await fetchTransactions())
 
         } catch (error) {
             setError(error.message)
@@ -64,12 +61,12 @@ function WalletContent({ userId }) {
 
         async function load() {
             try {
-                const data = await fetchWallet(userId, signal)
+                const data = await fetchWallet(signal)
                 if (signal.aborted) return
                 setError('')
                 setWallet(data)
                 setTransactions([])
-                const movements = await fetchTransactions(data.walletId, signal)
+                const movements = await fetchTransactions(signal)
                 if (!signal.aborted) setTransactions(movements)
             } catch (error) {
                 if (!signal.aborted) setError(error.message)
@@ -80,7 +77,7 @@ function WalletContent({ userId }) {
 
         load()
         return () => controller.abort()
-    }, [userId])
+    }, [])
 
     const handleDeposit = async (event) => {
         event.preventDefault()
@@ -101,8 +98,8 @@ function WalletContent({ userId }) {
             setError('')
             setSuccess('')
 
-            const response = await fetch(
-                `/api/wallets/${wallet.walletId}/deposits?amount=${depositAmount}`,
+            const response = await apiFetch(
+                `/api/wallets/me/deposits?amount=${depositAmount}`,
                 {
                     method: 'POST'
                 }

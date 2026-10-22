@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { Form, Button, Alert, Container, Card, Row, Col } from 'react-bootstrap'
+import {apiFetch} from "../utils/api.js";
 
 function CreateAuctionPage() {
     const [title, setTitle] = useState('')
@@ -95,7 +96,7 @@ function CreateAuctionPage() {
             return
         }
 
-        const response = await fetch('/api/auctions', {
+        const response = await apiFetch('/api/auctions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

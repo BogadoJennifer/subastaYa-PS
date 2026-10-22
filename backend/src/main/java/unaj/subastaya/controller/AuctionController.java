@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import unaj.subastaya.dto.CreateAuctionRequestDto;
 import unaj.subastaya.service.AuctionPublicationService;
 import unaj.subastaya.dto.CreateAuctionResponseDto;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import unaj.subastaya.model.User;
 
 import java.util.List;
 
@@ -48,8 +50,14 @@ public class AuctionController {
     }
 
     @PostMapping
-    public ResponseEntity<CreateAuctionResponseDto> createAuction(@Valid @RequestBody CreateAuctionRequestDto request) {
-        Auction savedAuction = auctionPublicationService.createAuction(request);
+    public ResponseEntity<CreateAuctionResponseDto> createAuction(
+            @Valid @RequestBody CreateAuctionRequestDto request,
+            @AuthenticationPrincipal User authenticatedUser
+    ) {
+        Auction savedAuction = auctionPublicationService.createAuction(
+                request,
+                authenticatedUser.getId()
+        );
 
         CreateAuctionResponseDto response = new CreateAuctionResponseDto(
                 savedAuction.getId(),
@@ -67,6 +75,7 @@ public class AuctionController {
 
         return ResponseEntity.status(201).body(response);
     }
+
     @GetMapping("/catalog")
     public List<AuctionCatalogDto> getCatalog() {
         return auctionRepository.findAll()

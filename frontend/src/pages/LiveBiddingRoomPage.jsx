@@ -6,6 +6,7 @@ import BidHistory from "../components/BidHistory.jsx";
 import { BidConsole } from '../components/BidConsole.jsx'
 import BidStatus from "../components/BidStatus.jsx";
 import { Toast, ToastContainer } from 'react-bootstrap'
+import {apiFetch} from "../utils/api.js";
 
 function LiveBiddingRoomPage({ auctionId: propId }) {
     const { auctionId: paramId } = useParams()
@@ -242,11 +243,10 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
         setMessage('')
 
         try {
-            const response = await fetch(`/api/auctions/${id}/bids`, {
+            const response = await apiFetch(`/api/auctions/${id}/bids`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    bidderId: currentUserId,
                     amount,
                 }),
             })

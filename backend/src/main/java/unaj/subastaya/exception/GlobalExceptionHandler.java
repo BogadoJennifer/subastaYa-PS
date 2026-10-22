@@ -6,6 +6,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -13,6 +14,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAuctionNotActive(AuctionNotActiveException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ex.getMessage()));   // 400
+    }
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(
+            ResponseStatusException ex) {
+
+        String message = ex.getReason() != null
+                ? ex.getReason()
+                : "Error en la solicitud";
+
+        return ResponseEntity
+                .status(ex.getStatusCode())
+                .body(new ErrorResponse(message));
     }
 
     @ExceptionHandler(InvalidBidAmountException.class)

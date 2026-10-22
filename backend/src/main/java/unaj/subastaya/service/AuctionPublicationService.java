@@ -28,7 +28,7 @@ public class AuctionPublicationService {
         this.categoriesRepository = categoriesRepository;
         this.userRepository = userRepository;
     }
-    public Auction createAuction(CreateAuctionRequestDto request) {
+    public Auction createAuction(CreateAuctionRequestDto request, Long vendorId) {
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -46,10 +46,10 @@ public class AuctionPublicationService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "La categoría indicada no existe"
                 ));
-        User vendor = userRepository.findByEmail("vendor@test.com")
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "El vendedor no existe"
-                ));
+        User vendor = userRepository.findById(vendorId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Vendedor no encontrado")
+                );
 
         Auction auction = new Auction();
         auction.setTitle(request.getTitle());

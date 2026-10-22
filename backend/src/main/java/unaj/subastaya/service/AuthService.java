@@ -10,6 +10,7 @@ import unaj.subastaya.dto.AuthResponseDto;
 import unaj.subastaya.dto.LoginRequestDto;
 import unaj.subastaya.dto.RegisterRequestDto;
 import unaj.subastaya.model.User;
+import unaj.subastaya.model.UserRole;
 import unaj.subastaya.repository.UserRepository;
 import unaj.subastaya.service.JwtService;
 
@@ -22,14 +23,18 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final WalletService walletService;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            JwtService jwtService,
+            WalletService walletService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.walletService = walletService;
     }
 
     @Transactional
@@ -60,7 +65,7 @@ public class AuthService {
         }
 
         User user = new User();
-
+        user.setRole(UserRole.USER);
         user.setName(request.name().trim());
         user.setEmail(email);
         //Generating a password hash using the password encoder and setting it to the user
@@ -70,7 +75,7 @@ public class AuthService {
         user.setRegistrationDate(LocalDateTime.now());
 
         User savedUser = userRepository.save(user);
-
+        walletService.createWalletForUser(savedUser);
         return toResponse(savedUser);
     }
 
@@ -118,6 +123,7 @@ public class AuthService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getRole().name(),
                 jwtService.generateToken(user.getEmail())
         );
     }

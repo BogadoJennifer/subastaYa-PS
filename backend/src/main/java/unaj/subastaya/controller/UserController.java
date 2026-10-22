@@ -2,6 +2,8 @@ package unaj.subastaya.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 import unaj.subastaya.model.User;
 import unaj.subastaya.repository.UserRepository;
 import unaj.subastaya.service.UserActivitiesService;
@@ -27,8 +29,12 @@ public class UserController {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
-    @GetMapping("/{userId}/activities")
-    public ResponseEntity<UserActivitiesDto> getActivities(@PathVariable Long userId) {
-        return ResponseEntity.ok(userActivitiesService.getActivities(userId));
+    @GetMapping("/me/activities")
+    public ResponseEntity<UserActivitiesDto> getActivities(
+            @AuthenticationPrincipal User authenticatedUser
+    ) {
+        return ResponseEntity.ok(
+                userActivitiesService.getActivities(authenticatedUser.getId())
+        );
     }
 }

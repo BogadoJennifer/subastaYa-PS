@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Badge, Button, Collapse } from 'react-bootstrap';
+import { apiFetch } from '../utils/api.js';
 
 function UserActivitiesPage() {
-    const { userId } = useParams();
 
     const [activities, setActivities] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -110,7 +110,7 @@ function UserActivitiesPage() {
     }
 
     useEffect(() => {
-        fetch(`http://localhost:8080/api/users/${userId}/activities`)
+        apiFetch(`/api/users/me/activities`)
     .then(response => {
     if (!response.ok) {
         throw new Error('No se pudieron cargar las actividades');
@@ -126,7 +126,7 @@ function UserActivitiesPage() {
         setError(error.message);
         setLoading(false);
     });
-}, [userId]);
+}, []);
 
 if (loading) {
     return (
@@ -262,7 +262,7 @@ return (
                                                     className="fw-bold mb-0"
                                                     role="button"
                                                     onClick={() =>
-                                                        navigate(`/auctions/${publication.auctionId}/live?demoUserId=${activities.userId}`)
+                                                        navigate(`/auctions/${publication.auctionId}/live`)
                                                     }
                                                 >
                                                     {publication.title}

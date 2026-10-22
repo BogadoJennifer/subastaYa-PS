@@ -49,8 +49,12 @@ public class SecurityConfig {
                                 "/api/auctions",
                                 "/api/auctions/catalog",
                                 "/api/auctions/*",
-                                "/api/auctions/*/details"
+                                "/api/auctions/*/details",
+                                "/api/auctions/*/bids"
                         ).permitAll()
+
+                        // Listado completo de usuarios: solo administradores
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
 
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()

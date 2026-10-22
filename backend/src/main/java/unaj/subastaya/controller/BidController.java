@@ -13,6 +13,8 @@ import unaj.subastaya.repository.BidRepository;
 import unaj.subastaya.service.BiddingService;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import unaj.subastaya.service.AuditLogService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import unaj.subastaya.model.User;
 
 import java.util.List;
 
@@ -65,12 +67,15 @@ public class BidController {
     @PostMapping
     public ResponseEntity<BidResultDto> registerBid(
             @PathVariable Long auctionId,
-            @RequestBody BidRequestDto dto
+            @RequestBody BidRequestDto dto,
+            @AuthenticationPrincipal User authenticatedUser
     ) {
+        Long bidderId = authenticatedUser.getId();
+
         try {
             BidResultDto result = biddingService.registerBid(
                     auctionId,
-                    dto.bidderId(),
+                    bidderId,
                     dto.amount()
             );
 
@@ -79,10 +84,9 @@ public class BidController {
                     .body(result);
 
         } catch (ObjectOptimisticLockingFailureException exception) {
-
             auditLogService.saveRejectedBidAudit(
                     auctionId,
-                    dto.bidderId(),
+                    bidderId,
                     "{\"reason\":\"CONCURRENCY_CONFLICT\",\"amount\":"
                             + dto.amount()
                             + "}"

@@ -2,6 +2,7 @@ package unaj.subastaya.model;
 import ch.qos.logback.classic.pattern.ClassOfCallerConverter;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "users")
@@ -20,6 +21,10 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime registrationDate = LocalDateTime.now();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role = UserRole.USER;
+
     @Column(nullable = false)
     private String name;
 
@@ -36,4 +41,6 @@ public class User {
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     public LocalDateTime getRegistrationDate() { return registrationDate; }
     public void setRegistrationDate(LocalDateTime registrationDate) { this.registrationDate = registrationDate; }
+    public UserRole getRole() {return role;}
+    public void setRole(UserRole role) {this.role = role;}
 }

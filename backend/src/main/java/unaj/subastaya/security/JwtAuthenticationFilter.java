@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import unaj.subastaya.model.User;
 import unaj.subastaya.repository.UserRepository;
@@ -54,7 +55,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new UsernamePasswordAuthenticationToken(
                                     user,
                                     null,
-                                    List.of()
+                                    List.of(
+                                            new SimpleGrantedAuthority(
+                                                    "ROLE_" + user.getRole().name()
+                                            )
+                                    )
                             );
 
                     SecurityContextHolder.getContext()

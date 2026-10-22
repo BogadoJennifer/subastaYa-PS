@@ -113,6 +113,7 @@ public class BiddingService {
             );
         }
 
+        //calculate the minimum bid based on the current highest bid or the base price.
         BigDecimal currentPrice = bidRepository
                 .findHighestBid(auctionId)
                 .map(Bid::getAmount)
@@ -168,6 +169,7 @@ public class BiddingService {
                 auction.getEndDate()
         );
 
+        // Anti-sniping mechanism: if the bid is placed within the last 60 seconds of the auction, extend the auction by 2 minutes.
         boolean wasExtended =
                 remainingTime.compareTo(Duration.ofSeconds(60)) <= 0;
 
@@ -202,6 +204,7 @@ public class BiddingService {
                 wasExtended
         );
 
+        // Prepare the notification payload for clients(Real time updates)
         Map<String, Object> notification = Map.of(
                 "bidId", savedBid.getId(),
                 "highestBid", savedBid.getAmount(),
@@ -218,7 +221,7 @@ public class BiddingService {
                         try {
                             messagingTemplate.convertAndSend(
                                     "/topic/auctions/" + auctionId,
-                                    Optional.of(notification)
+                                    (Object) notification
                             );
                         } catch (RuntimeException exception) {
                             org.slf4j.LoggerFactory

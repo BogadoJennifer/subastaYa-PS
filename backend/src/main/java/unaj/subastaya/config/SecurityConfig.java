@@ -55,6 +55,7 @@ public class SecurityConfig {
 
                         // Listado completo de usuarios: solo administradores
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/audit-logs/**").hasRole("ADMIN")
 
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()

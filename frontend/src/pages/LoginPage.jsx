@@ -34,7 +34,7 @@ function LoginPage() {
             }
 
             sessionStorage.setItem('subastaYaAuth', JSON.stringify(data))
-            navigate('/')
+            navigate(data.role === 'ADMIN' ? '/admin' : '/')
         } catch (requestError) {
             setError(requestError.message)
         } finally {

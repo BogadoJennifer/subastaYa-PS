@@ -8,6 +8,7 @@ import unaj.subastaya.model.User;
 import unaj.subastaya.repository.UserRepository;
 import unaj.subastaya.service.UserActivitiesService;
 import unaj.subastaya.dto.UserActivitiesDto;
+import unaj.subastaya.dto.AdminUserDto;
 
 import java.util.List;
 
@@ -25,8 +26,19 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<List<AdminUserDto>> getAllUsers() {
+        List<AdminUserDto> users = userRepository.findAll()
+                .stream()
+                .map(user -> new AdminUserDto(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole().name(),
+                        user.getRegistrationDate()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/me/activities")

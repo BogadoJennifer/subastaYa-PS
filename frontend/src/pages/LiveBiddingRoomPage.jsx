@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import Countdown from '../components/Countdown.jsx'
 import BidHistory from "../components/BidHistory.jsx";
@@ -10,6 +10,7 @@ import {apiFetch, getCurrentUser} from "../utils/api.js";
 
 function LiveBiddingRoomPage({ auctionId: propId }) {
     const { auctionId: paramId } = useParams()
+    const navigate = useNavigate()
 
     const id = propId || paramId
 
@@ -62,10 +63,10 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
                     try {
                         const [auctionResponse, bidsResponse] = await Promise.all([
                             fetch(
-                                `/api/auctions/${id}/details?userId=${encodeURIComponent(currentUserId)}`,
-                                {
-                                    signal: controller.signal,
-                                }
+                                currentUserId == null
+                                    ? `/api/auctions/${id}/details`
+                                    : `/api/auctions/${id}/details?userId=${encodeURIComponent(currentUserId)}`,
+                                { signal: controller.signal }
                             ),
                             fetch(`/api/auctions/${id}/bids`, {
                                 signal: controller.signal,
@@ -221,6 +222,10 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
 
     // 3. Enviar la oferta mínima
     const handleBid = async (amount) => {
+        if (!currentUser) {
+            navigate('/login')
+            return false
+        }
         if (isSubmitting || !canBid) return false
 
         const minimumAmount = Number(

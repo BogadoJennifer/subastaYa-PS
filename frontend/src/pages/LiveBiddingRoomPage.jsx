@@ -1,24 +1,22 @@
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import Countdown from '../components/Countdown.jsx'
 import BidHistory from "../components/BidHistory.jsx";
 import { BidConsole } from '../components/BidConsole.jsx'
 import BidStatus from "../components/BidStatus.jsx";
 import { Toast, ToastContainer } from 'react-bootstrap'
+import {apiFetch, getCurrentUser} from "../utils/api.js";
 
 function LiveBiddingRoomPage({ auctionId: propId }) {
     const { auctionId: paramId } = useParams()
-    const [searchParams] = useSearchParams()
+    const navigate = useNavigate()
 
     const id = propId || paramId
 
-    const demoUserId = searchParams.get('demoUserId')
+    const currentUser = getCurrentUser()
+    const currentUserId = currentUser?.id ?? null
 
-    const currentUserId =
-        import.meta.env.DEV && ['1', '2', '3'].includes(demoUserId)
-            ? Number(demoUserId)
-            : 2
 
     const [auction, setAuction] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -65,10 +63,10 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
                     try {
                         const [auctionResponse, bidsResponse] = await Promise.all([
                             fetch(
-                                `/api/auctions/${id}/details?userId=${encodeURIComponent(currentUserId)}`,
-                                {
-                                    signal: controller.signal,
-                                }
+                                currentUserId == null
+                                    ? `/api/auctions/${id}/details`
+                                    : `/api/auctions/${id}/details?userId=${encodeURIComponent(currentUserId)}`,
+                                { signal: controller.signal }
                             ),
                             fetch(`/api/auctions/${id}/bids`, {
                                 signal: controller.signal,
@@ -224,6 +222,10 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
 
     // 3. Enviar la oferta mínima
     const handleBid = async (amount) => {
+        if (!currentUser) {
+            navigate('/login')
+            return false
+        }
         if (isSubmitting || !canBid) return false
 
         const minimumAmount = Number(
@@ -242,11 +244,10 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
         setMessage('')
 
         try {
-            const response = await fetch(`/api/auctions/${id}/bids`, {
+            const response = await apiFetch(`/api/auctions/${id}/bids`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    bidderId: currentUserId,
                     amount,
                 }),
             })
@@ -268,6 +269,19 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
                     'El servidor respondió sin los datos esperados. Recargá la página para verificar si la oferta se registró.'
                 )
                 return false
+            }
+            try {
+                const historyResponse = await apiFetch(`/api/auctions/${id}/bids`)
+
+                if (historyResponse.ok) {
+                    const updatedBids = await historyResponse.json()
+
+                    if (Array.isArray(updatedBids)) {
+                        setBids(updatedBids)
+                    }
+                }
+            } catch {
+                // La puja ya fue aceptada; el historial se actualizará en la próxima carga.
             }
 
             setAuction((previousAuction) => {
@@ -298,6 +312,7 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
             setMessage(`¡Oferta de ${formattedAmount} registrada!`)
 
             return true
+
         } catch {
             setFeedbackVariant('warning')
             setMessage(
@@ -313,9 +328,9 @@ function LiveBiddingRoomPage({ auctionId: propId }) {
         <div className="container py-4" style={{ maxWidth: '500px' }}>
             <h2>{auction.title}</h2>
 
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV && currentUser && (
                 <div className="alert alert-secondary py-2">
-                    Usuario de prueba: <strong>Postor {currentUserId}</strong>
+                    Sesión actual: <strong>{currentUser.name}</strong>
                 </div>
             )}
 

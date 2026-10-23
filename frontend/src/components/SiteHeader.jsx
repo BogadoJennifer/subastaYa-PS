@@ -1,9 +1,17 @@
 import { Container, Navbar } from 'react-bootstrap'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { getCurrentUser } from '../utils/api.js'
 
 function SiteHeader() {
     const location = useLocation()
     const navigate = useNavigate()
+    const currentUser = getCurrentUser()
+    const isAdminLogin = location.pathname === '/admin/login'
+
+    function handleLogout() {
+        sessionStorage.removeItem('subastaYaAuth')
+        navigate('/login', { replace: true })
+    }
 
     const isActivitiesPage = location.pathname.includes('/activities')
     const isWalletPage = location.pathname.includes('/wallet')
@@ -21,7 +29,7 @@ function SiteHeader() {
             </div>
 
             <Navbar className="site-navbar">
-                <Container>
+                <Container className="d-flex align-items-center justify-content-between">
                     <a
                         href="/"
                         className="catalog-link"
@@ -32,6 +40,28 @@ function SiteHeader() {
                     >
                         Explorar subastas
                     </a>
+
+                    <div className="d-flex align-items-center gap-3">
+                        {currentUser ? (
+                            <>
+                                <span> {currentUser.name} · {currentUser.role === 'ADMIN' ? 'Administrador' : 'Usuario'}</span>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary btn-sm"
+                                    onClick={handleLogout}
+                                >
+                                    Cerrar sesión
+                                </button>
+                            </>
+                        ) : (
+                            !isAdminLogin && (
+                                <>
+                                    <Link to="/login">Iniciar sesión</Link>
+                                    <Link to="/register">Crear cuenta</Link>
+                                </>
+                            )
+                        )}
+                    </div>
                 </Container>
             </Navbar>
 

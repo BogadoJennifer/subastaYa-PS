@@ -62,7 +62,7 @@ function AuctionCatalog() {
                     <Button
                         variant="light"
                         className="catalog-action-button"
-                        onClick={() => navigate('/wallet/1')}
+                        onClick={() => navigate('/wallet')}
                     >
                         Mi billetera
                     </Button>
@@ -70,7 +70,7 @@ function AuctionCatalog() {
                     <Button
                         variant="light"
                         className="catalog-action-button"
-                        onClick={() => navigate('/users/1/activities')}
+                        onClick={() => navigate('/users/activities')}
                     >
                         Mis actividades
                     </Button>
@@ -168,7 +168,6 @@ function AuctionCatalog() {
                                 <Col key={auction.id}>
                                     <AuctionCard
                                         auction={auction}
-                                        onEnterRoom={() => onSelectAuction(auction.id)}
                                     />
                                 </Col>
                             ))}

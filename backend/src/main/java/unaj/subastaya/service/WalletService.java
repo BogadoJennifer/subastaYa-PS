@@ -10,6 +10,7 @@ import unaj.subastaya.repository.LedgerTransactionRepository;
 import unaj.subastaya.repository.WalletRepository;
 import unaj.subastaya.model.AuditLog;
 import unaj.subastaya.repository.AuditLogRepository;
+import unaj.subastaya.model.User;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,9 +42,24 @@ public class WalletService {
     }
 
     @Transactional
-    public Wallet depositMoney(Long walletId, BigDecimal amount) {
+    public void createWalletForUser(User user) {
+        if (walletRepository.findByUser_Id(user.getId()).isPresent()) {
+            return;
+        }
 
-        Wallet wallet = walletRepository.findById(walletId)
+        Wallet wallet = new Wallet();
+        wallet.setUser(user);
+        wallet.setTotalBalance(BigDecimal.ZERO);
+        wallet.setRetainedBalance(BigDecimal.ZERO);
+        wallet.setAvailableBalance(BigDecimal.ZERO);
+
+        walletRepository.save(wallet);
+    }
+
+    @Transactional
+    public WalletSummaryDto depositMoney(Long userId, BigDecimal amount) {
+
+        Wallet wallet = walletRepository.findByUser_Id(userId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Billetera no encontrada")
                 );
@@ -87,7 +103,7 @@ public class WalletService {
 
         auditLogRepository.save(auditLog);
 
-        return updatedWallet;
+        return toSummary(updatedWallet);
     }
 
     private WalletSummaryDto toSummary(Wallet wallet) {
